@@ -269,6 +269,10 @@
           <input type="text" id="learnerName" maxlength="12" placeholder="비우면 이름 없이">
         </div>
         <div>
+          <label for="range">범위 (번호)</label>
+          <input type="text" id="range" placeholder="예: 601-630" inputmode="numeric">
+        </div>
+        <div>
           <label for="count">문제 수</label>
           <input type="number" id="count" min="1" step="1" placeholder="비우면 전체">
         </div>
@@ -297,6 +301,9 @@
         <label class="check"><input type="checkbox" id="optCase"> 대소문자 구분</label>
         <label class="check"><input type="checkbox" id="optAuto" checked> 정답 시 자동 진행</label>
       </div>
+      <p class="hint"><b>범위</b>는 엑셀 번호(A열) 기준입니다. <b>601-630</b> 처럼 적으면 그 번호의 단어만 출제합니다.
+        <b>1-50, 601-630</b> 처럼 여러 구간을 쉼표로 이어 붙이거나, <b>7</b> 처럼 한 개만 적어도 됩니다.
+        비워 두면 전체에서 출제합니다. (번호가 없는 목록은 위에서부터 1, 2, 3… 순번으로 셉니다)</p>
     </div>
 
     <button type="button" id="btnStart" class="primary big">시작하기</button>
@@ -354,7 +361,7 @@
     <div class="card" id="wrongCard">
       <h2>틀린 단어</h2>
       <table>
-        <thead><tr><th>단어</th><th>뜻</th><th style="width:70px">시도</th></tr></thead>
+        <thead><tr><th style="width:56px">번호</th><th>단어</th><th>뜻</th><th style="width:64px">시도</th></tr></thead>
         <tbody id="wrongBody"></tbody>
       </table>
     </div>
@@ -424,7 +431,7 @@ const el = {
   setup:$('setupView'), quiz:$('quizView'), result:$('resultView'),
   words:$('words'), wordCount:$('wordCount'), ttsWarn:$('ttsWarn'),
   fileInput:$('fileInput'), fileMsg:$('fileMsg'),
-  mode:$('mode'), learnerName:$('learnerName'), count:$('count'), tries:$('tries'), rate:$('rate'), rateVal:$('rateVal'), voice:$('voice'),
+  mode:$('mode'), learnerName:$('learnerName'), range:$('range'), count:$('count'), tries:$('tries'), rate:$('rate'), rateVal:$('rateVal'), voice:$('voice'),
   speakLabel:$('speakLabel'), answerLabel:$('answerLabel'), btnSpell:$('btnSpell'),
   optShuffle:$('optShuffle'), optMeaning:$('optMeaning'), optLen:$('optLen'),
   optCase:$('optCase'), optAuto:$('optAuto'),
@@ -436,7 +443,7 @@ const el = {
 
 /* ─────────────── 설정 저장 ─────────────── */
 const KEY_W = 'sq.words', KEY_S = 'sq.settings';
-const S = { mode:'ko', name:'지유', rate:0.9, tries:2, shuffle:true, meaning:true, len:false, caseSensitive:false, auto:true, voiceURI:'', count:'' };
+const S = { mode:'ko', name:'지유', rate:0.9, tries:2, shuffle:true, meaning:true, len:false, caseSensitive:false, auto:true, voiceURI:'', count:'', range:'' };
 
 function readSettings(){
   S.mode = el.mode.value;
@@ -450,6 +457,7 @@ function readSettings(){
   S.auto = el.optAuto.checked;
   S.voiceURI = el.voice.value;
   S.count = el.count.value;
+  S.range = el.range.value.trim();
   try{ localStorage.setItem(KEY_S, JSON.stringify(S)); }catch(e){}
 }
 function applySettings(){
@@ -463,6 +471,7 @@ function applySettings(){
   el.optShuffle.checked = S.shuffle; el.optMeaning.checked = S.meaning;
   el.optLen.checked = S.len; el.optCase.checked = S.caseSensitive; el.optAuto.checked = S.auto;
   el.count.value = S.count || '';
+  el.range.value = S.range || '';
 }
 function chosenEnVoice(){
   if(!S.voiceURI) return null;
@@ -496,8 +505,14 @@ function parseWords(text){
 
   const out = [], seen = new Set();
   for(const raw of lines){
-    const line = raw.trim();
+    let line = raw.trim();
     if(!line || line.startsWith('#')) continue;
+
+    // "601. vacation, 휴가" 처럼 앞에 붙은 번호를 떼어낸다
+    let no = null;
+    const numPrefix = line.match(/^(\d{1,6})\s*[.)]\s+(.+)$/);
+    if(numPrefix){ no = parseInt(numPrefix[1], 10); line = numPrefix[2].trim(); }
+
     let word = line, meaning = '';
     const m = line.match(/^([^\t,:=|]+?)\s*[\t,:=|]\s*(.+)$/);
     if(m){ word = m[1].trim(); meaning = m[2].trim(); }
@@ -506,9 +521,33 @@ function parseWords(text){
     const k = word.toLowerCase();
     if(seen.has(k)) continue;
     seen.add(k);
-    out.push({word, meaning});
+    out.push({word, meaning, no});
   }
+  // 번호가 없는 줄은 순서대로 번호를 매긴다
+  out.forEach((x, i) => { if(x.no == null) x.no = i + 1; });
   return out;
+}
+
+/* 범위 문자열 해석: "601-630", "1-50, 601-630", "5 7 12" 모두 지원.
+   해석 못 하면 'ERR:<문제가 된 부분>' 을 돌려준다. */
+function parseRange(spec){
+  spec = (spec || '').trim();
+  if(!spec) return null;
+  const parts = spec.replace(/\s*[-~–—]\s*/g, '-').split(/[,;\s]+/).filter(Boolean);
+  const out = [];
+  for(const p of parts){
+    const m = /^(\d+)-(\d+)$/.exec(p);
+    if(m){
+      let a = +m[1], b = +m[2];
+      if(a > b){ const t = a; a = b; b = t; }
+      out.push([a, b]);
+    }else if(/^\d+$/.test(p)){
+      out.push([+p, +p]);
+    }else{
+      return 'ERR:' + p;
+    }
+  }
+  return out.length ? out : null;
 }
 function updateCount(){
   const n = parseWords(el.words.value).length;
@@ -519,10 +558,29 @@ function updateCount(){
 /* ─────────────── 퀴즈 상태 ─────────────── */
 const Q = { list:[], i:0, attempt:0, ok:0, ng:0, revealed:false, results:[], token:0 };
 
-function startQuiz(list){
+function startQuiz(list, ignoreRange){
   if(!list.length){ alert('단어를 먼저 입력해 주세요.'); return; }
   readSettings();
   let items = list.slice();
+
+  // 번호 범위 걸러내기 (예: 601-630)
+  const ranges = ignoreRange ? null : parseRange(S.range);
+  if(typeof ranges === 'string'){
+    alert('범위를 알아볼 수 없습니다: "' + ranges.slice(4) + '"\n\n' +
+          '이런 식으로 적어 주세요.\n  601-630\n  1-50, 601-630\n  7');
+    return;
+  }
+  if(ranges){
+    const before = items.length;
+    items = items.filter(x => ranges.some(r => x.no >= r[0] && x.no <= r[1]));
+    if(!items.length){
+      const all = list.map(x => x.no).filter(n => n != null);
+      const span = all.length ? Math.min.apply(null, all) + '~' + Math.max.apply(null, all) + '번' : '없음';
+      alert('그 범위에 해당하는 단어가 없습니다.\n\n' +
+            '지금 목록의 번호 범위: ' + span + ' (전체 ' + before + '개)');
+      return;
+    }
+  }
 
   if(S.mode === 'ko'){
     const withMeaning = items.filter(x => x.meaning);
@@ -584,7 +642,9 @@ function lengthHint(word){
   return word.split('').map(c => /[a-z]/i.test(c) ? '_' : c).join(' ');
 }
 function renderProgress(){
-  el.progressText.textContent = (Q.i + 1) + ' / ' + Q.list.length;
+  const w = cur();
+  el.progressText.textContent = (Q.i + 1) + ' / ' + Q.list.length +
+    (w && w.no ? '   ·   ' + w.no + '번' : '');
   el.scoreText.textContent = '⭕ ' + Q.ok + '   ❌ ' + Q.ng;
   el.progressBar.style.width = (Q.i / Q.list.length * 100) + '%';
 }
@@ -613,7 +673,7 @@ function submit(){
   const t = Q.token;
   if(normalize(typed) === normalize(w.word)){
     Q.ok++;
-    Q.results.push({word:w.word, meaning:w.meaning, correct:true, tries:Q.attempt + 1});
+    Q.results.push({word:w.word, meaning:w.meaning, no:w.no, correct:true, tries:Q.attempt + 1});
     el.feedback.className = 'feedback show ok';
     el.feedback.innerHTML = '⭕ ' + esc(praiseText()) + ' <span class="ans">' + esc(w.word) + '</span>';
     el.answer.disabled = true;
@@ -655,7 +715,7 @@ function submit(){
 function reveal(gaveUp){
   const w = cur();
   Q.ng++;
-  Q.results.push({word:w.word, meaning:w.meaning, correct:false, tries:gaveUp ? 0 : Q.attempt});
+  Q.results.push({word:w.word, meaning:w.meaning, no:w.no, correct:false, tries:gaveUp ? 0 : Q.attempt});
   Q.revealed = true;
   el.feedback.className = 'feedback show bad';
   el.feedback.innerHTML = '정답은 <span class="ans">' + esc(w.word) + '</span>' +
@@ -694,7 +754,8 @@ function finish(){
   const wrong = Q.results.filter(r => !r.correct);
   el.wrongCard.classList.toggle('hidden', wrong.length === 0);
   el.wrongBody.innerHTML = wrong.map(r =>
-    '<tr><td class="w">' + esc(r.word) + '</td><td>' + esc(r.meaning || '') + '</td><td>' +
+    '<tr><td style="color:var(--muted)">' + (r.no || '') + '</td>' +
+    '<td class="w">' + esc(r.word) + '</td><td>' + esc(r.meaning || '') + '</td><td>' +
     (r.tries ? r.tries + '회' : '포기') + '</td></tr>').join('');
   $('btnRetryWrong').disabled = wrong.length === 0;
   const v = vocative();
@@ -884,13 +945,22 @@ function rowsToWords(rows){
     if(!word) return;
     let mean = cells.find(c => /[가-힣]/.test(c));
     if(!mean) mean = cells[cells.indexOf(word) + 1] || '';
-    out.push({word: word.replace(/\s+/g, ' '), meaning: mean.replace(/\s+/g, ' ')});
+    // 숫자만 들어 있는 칸은 번호로 본다 (엑셀의 번호 열)
+    const numCell = cells.find(c => /^\d{1,6}(\.0+)?$/.test(c));
+    out.push({
+      word: word.replace(/\s+/g, ' '),
+      meaning: mean.replace(/\s+/g, ' '),
+      no: numCell ? parseInt(numCell, 10) : null
+    });
   });
   return out;
 }
 
 function insertWords(items, label){
-  const text = items.map(x => x.meaning ? x.word + ', ' + x.meaning : x.word).join('\n');
+  const text = items.map(x => {
+    const body = x.meaning ? x.word + ', ' + x.meaning : x.word;
+    return x.no ? x.no + '. ' + body : body;   // 번호를 함께 적어 범위 지정에 쓴다
+  }).join('\n');
   const prev = el.words.value.trim();
   if(prev && confirm('기존 목록(' + parseWords(prev).length + '개)에 이어서 추가할까요?\n\n[확인] 이어서 추가\n[취소] 기존 목록을 지우고 새로 넣기')){
     el.words.value = prev + '\n' + text;
@@ -950,7 +1020,7 @@ el.words.addEventListener('drop', e => {
 el.words.addEventListener('input', updateCount);
 el.rate.addEventListener('input', () => { el.rateVal.textContent = el.rate.value; S.rate = parseFloat(el.rate.value); });
 el.voice.addEventListener('change', () => { S.voiceURI = el.voice.value; });
-[el.mode, el.learnerName, el.tries, el.count, el.optShuffle, el.optMeaning, el.optLen, el.optCase, el.optAuto]
+[el.mode, el.learnerName, el.range, el.tries, el.count, el.optShuffle, el.optMeaning, el.optLen, el.optCase, el.optAuto]
   .forEach(n => n.addEventListener('change', readSettings));
 
 $('btnSample').addEventListener('click', () => {
@@ -982,10 +1052,10 @@ document.addEventListener('keydown', e => {
 });
 
 $('btnRetryWrong').addEventListener('click', () => {
-  const wrong = Q.results.filter(r => !r.correct).map(r => ({word:r.word, meaning:r.meaning}));
-  startQuiz(wrong);
+  const wrong = Q.results.filter(r => !r.correct).map(r => ({word:r.word, meaning:r.meaning, no:r.no}));
+  startQuiz(wrong, true);   // 이미 걸러진 목록이므로 범위를 다시 적용하지 않는다
 });
-$('btnRetryAll').addEventListener('click', () => startQuiz(Q.list.slice()));
+$('btnRetryAll').addEventListener('click', () => startQuiz(Q.list.slice(), true));
 $('btnBack').addEventListener('click', () => { TTS.cancel(); show('setup'); });
 
 /* ─────────────── 초기화 ─────────────── */
