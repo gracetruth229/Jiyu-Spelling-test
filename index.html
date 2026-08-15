@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>영어 단어 받아쓰기</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#ffffff; --fg:#1a1d21; --muted:#6b7280;
+    --line:#e2e5ea; --accent:#3b6ef5; --accent-fg:#ffffff;
+    --ok:#12855a; --ok-bg:#e6f6ee; --bad:#c62b3d; --bad-bg:#fdeaec;
+    --warn:#8a6100; --warn-bg:#fff5dd;
+    --radius:14px; --shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14161a; --card:#1d2026; --fg:#e8eaed; --muted:#9aa2ad;
+      --line:#2e333b; --accent:#5b86ff; --accent-fg:#0d1016;
+      --ok:#4ad295; --ok-bg:#12291f; --bad:#ff7b8a; --bad-bg:#2c1418;
+      --warn:#ffcf6b; --warn-bg:#2b2313;
+      --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+    }
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:system-ui,-apple-system,"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    line-height:1.6; -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:720px; margin:0 auto; padding:24px 16px 64px}
+  header{display:flex; align-items:baseline; gap:10px; margin-bottom:18px; flex-wrap:wrap}
+  h1{font-size:1.35rem; margin:0; letter-spacing:-.01em}
+  header .sub{color:var(--muted); font-size:.85rem}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); margin-bottom:16px}
+  h2{font-size:1rem; margin:0 0 10px}
+  label{display:block; font-size:.85rem; color:var(--muted); margin-bottom:6px}
+  textarea,input[type=text],input[type=number],select{
+    width:100%; font:inherit; color:var(--fg); background:var(--bg);
+    border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+  }
+  textarea{min-height:190px; resize:vertical; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.9rem; line-height:1.5}
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--accent); outline-offset:1px}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px}
+  button{
+    font:inherit; font-weight:600; cursor:pointer; border-radius:10px;
+    border:1px solid var(--line); background:var(--card); color:var(--fg); padding:10px 16px;
+  }
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent); color:var(--accent-fg); border-color:transparent}
+  button.big{padding:14px 20px; font-size:1.05rem; width:100%}
+  button:disabled{opacity:.5; cursor:not-allowed}
+  .chip{font-size:.8rem; padding:6px 10px; border-radius:999px}
+  .check{display:flex; align-items:center; gap:8px; font-size:.9rem; color:var(--fg)}
+  .check input{width:auto; accent-color:var(--accent)}
+  .hint{font-size:.8rem; color:var(--muted); margin-top:6px}
+  .bar{height:8px; background:var(--line); border-radius:999px; overflow:hidden; margin:4px 0 14px}
+  .bar>i{display:block; height:100%; background:var(--accent); width:0; transition:width .25s}
+  .status{display:flex; justify-content:space-between; font-size:.85rem; color:var(--muted); margin-bottom:2px}
+  .speaker{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    width:100%; padding:26px 0; font-size:1.1rem; border:2px dashed var(--line); background:transparent;
+  }
+  .speaker .icon{font-size:2.4rem; line-height:1}
+  .meaning{text-align:center; font-size:1.05rem; margin:14px 0 4px; min-height:1.6em}
+  .pattern{text-align:center; font-family:ui-monospace,Menlo,Consolas,monospace; letter-spacing:.35em; color:var(--muted); min-height:1.6em}
+  #answer{font-size:1.5rem; text-align:center; letter-spacing:.04em; padding:14px}
+  .feedback{margin-top:12px; padding:12px 14px; border-radius:10px; font-weight:600; display:none}
+  .feedback.show{display:block}
+  .feedback.ok{background:var(--ok-bg); color:var(--ok)}
+  .feedback.bad{background:var(--bad-bg); color:var(--bad)}
+  .feedback .ans{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:1.15rem; letter-spacing:.05em}
+  .banner{background:var(--warn-bg); color:var(--warn); padding:10px 14px; border-radius:10px; font-size:.88rem; margin-bottom:16px; display:none}
+  .banner.show{display:block}
+  table{width:100%; border-collapse:collapse; font-size:.92rem}
+  th,td{text-align:left; padding:8px 6px; border-bottom:1px solid var(--line)}
+  th{color:var(--muted); font-weight:600; font-size:.8rem}
+  td.w{font-family:ui-monospace,Menlo,Consolas,monospace}
+  .score{font-size:2.2rem; font-weight:700; text-align:center; margin:6px 0}
+  .score small{display:block; font-size:.85rem; font-weight:400; color:var(--muted)}
+  .hidden{display:none !important}
+  footer{color:var(--muted); font-size:.8rem; text-align:center; margin-top:24px}
+  kbd{font-family:inherit; font-size:.78rem; background:var(--bg); border:1px solid var(--line); border-bottom-width:2px; border-radius:6px; padding:1px 6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🎧 영어 단어 받아쓰기</h1>
+    <span class="sub">듣고 → 스펠링 입력 → 음성 채점</span>
+  </header>
+
+  <div id="ttsWarn" class="banner"></div>
+
+  <!-- ───────── 설정 화면 ───────── -->
+  <section id="setupView">
+    <div class="card">
+      <h2>1. 단어 입력</h2>
+      <label for="words">한 줄에 <code>단어, 뜻</code> 형식으로 입력하세요. (영어 발음 듣기 방식만 쓸 거면 뜻은 생략 가능)</label>
+      <textarea id="words" spellcheck="false" placeholder="vacation, 휴가&#10;client, 고객&#10;schedule, 일정&#10;available&#10;receipt"></textarea>
+      <div class="row" style="margin-top:10px">
+        <span id="wordCount" class="chip" style="background:var(--bg);color:var(--muted)">0개</span>
+        <button type="button" id="btnFile" class="primary">📁 엑셀 / CSV 불러오기</button>
+        <button type="button" id="btnSample">샘플 30개 넣기</button>
+        <button type="button" id="btnClear">비우기</button>
+        <input type="file" id="fileInput" accept=".xlsx,.csv,.tsv,.txt" class="hidden">
+      </div>
+      <p class="hint" id="fileMsg">같은 폴더의 <b>단어목록_양식.xlsx</b> 를 채워서 올리면 가장 간단합니다. 직접 만든 엑셀도 <b>단어 열 + 뜻 열</b>만 있으면 되고, 열 순서가 바뀌거나 번호 열이 앞에 있어도 자동으로 찾습니다. 첫 줄 머리글은 건너뜁니다. 파일을 입력창에 끌어다 놓아도 됩니다.</p>
+      <p class="hint">입력한 목록은 이 브라우저에 자동 저장됩니다.</p>
+    </div>
+
+    <div class="card">
+      <h2>2. 출제 설정</h2>
+      <div style="margin-bottom:14px">
+        <label for="mode">출제 방식</label>
+        <select id="mode">
+          <option value="ko">🇰🇷 한국어 뜻을 들려주면 → 영어 스펠링 입력</option>
+          <option value="en">🇺🇸 영어 발음을 들려주면 → 스펠링 입력</option>
+        </select>
+      </div>
+      <div class="grid">
+        <div>
+          <label for="learnerName">이름 (칭찬할 때 부를 이름)</label>
+          <input type="text" id="learnerName" maxlength="12" placeholder="비우면 이름 없이">
+        </div>
+        <div>
+          <label for="count">문제 수</label>
+          <input type="number" id="count" min="1" step="1" placeholder="비우면 전체">
+        </div>
+        <div>
+          <label for="tries">오답 재시도 횟수</label>
+          <select id="tries">
+            <option value="1">1번 (틀리면 바로 정답 공개)</option>
+            <option value="2" selected>2번</option>
+            <option value="3">3번</option>
+            <option value="0">무제한 (맞출 때까지)</option>
+          </select>
+        </div>
+        <div>
+          <label for="rate">읽기 속도 <span id="rateVal">0.9</span>x</label>
+          <input type="range" id="rate" min="0.5" max="1.4" step="0.1" value="0.9" style="width:100%">
+        </div>
+        <div>
+          <label for="voice">영어 목소리</label>
+          <select id="voice"></select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:14px; gap:16px">
+        <label class="check"><input type="checkbox" id="optShuffle" checked> 랜덤 순서</label>
+        <label class="check"><input type="checkbox" id="optMeaning" checked> 문제 글자로 함께 보기</label>
+        <label class="check"><input type="checkbox" id="optLen"> 글자 수 힌트</label>
+        <label class="check"><input type="checkbox" id="optCase"> 대소문자 구분</label>
+        <label class="check"><input type="checkbox" id="optAuto" checked> 정답 시 자동 진행</label>
+      </div>
+    </div>
+
+    <button type="button" id="btnStart" class="primary big">시작하기</button>
+    <p class="hint" style="text-align:center">첫 실행 시 브라우저가 음성을 준비하는 데 1~2초 걸릴 수 있습니다.</p>
+  </section>
+
+  <!-- ───────── 퀴즈 화면 ───────── -->
+  <section id="quizView" class="hidden">
+    <div class="status">
+      <span id="progressText">1 / 10</span>
+      <span id="scoreText">⭕ 0 &nbsp; ❌ 0</span>
+    </div>
+    <div class="bar"><i id="progressBar"></i></div>
+
+    <div class="card">
+      <button type="button" id="btnSpeak" class="speaker">
+        <span class="icon">🔊</span>
+        <span id="speakLabel">다시 듣기</span>
+      </button>
+      <div class="row" style="justify-content:center; margin-top:10px">
+        <button type="button" id="btnSlow">🐢 천천히</button>
+        <button type="button" id="btnSpell" class="hidden">🔤 철자 듣기</button>
+      </div>
+
+      <div class="meaning" id="meaning"></div>
+      <div class="pattern" id="pattern"></div>
+
+      <label for="answer" id="answerLabel" style="margin-top:10px">들은 단어의 스펠링을 입력하세요</label>
+      <input type="text" id="answer" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done">
+
+      <div class="feedback" id="feedback"></div>
+
+      <div class="row" style="margin-top:14px">
+        <button type="button" id="btnSubmit" class="primary" style="flex:1">확인 (Enter)</button>
+        <button type="button" id="btnNext" class="primary hidden" style="flex:1">다음 (Enter)</button>
+        <button type="button" id="btnGiveUp">모르겠어요</button>
+      </div>
+      <p class="hint">빈 칸에서 <kbd>Enter</kbd>를 누르면 단어를 다시 들려줍니다.</p>
+    </div>
+
+    <button type="button" id="btnQuit">그만하고 결과 보기</button>
+  </section>
+
+  <!-- ───────── 결과 화면 ───────── -->
+  <section id="resultView" class="hidden">
+    <div class="card">
+      <h2>결과</h2>
+      <div class="score" id="finalScore">—</div>
+      <div class="row" style="justify-content:center">
+        <button type="button" id="btnRetryWrong" class="primary">틀린 단어만 다시</button>
+        <button type="button" id="btnRetryAll">전체 다시</button>
+        <button type="button" id="btnBack">설정으로</button>
+      </div>
+    </div>
+    <div class="card" id="wrongCard">
+      <h2>틀린 단어</h2>
+      <table>
+        <thead><tr><th>단어</th><th>뜻</th><th style="width:70px">시도</th></tr></thead>
+        <tbody id="wrongBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>브라우저 내장 음성합성(Web Speech API)을 사용합니다 · Chrome / Edge / Safari 권장</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ─────────────── 음성 ─────────────── */
+const TTS = {
+  supported: 'speechSynthesis' in window,
+  voices: [], en: null, ko: null,
+  load(){
+    if(!this.supported) return;
+    this.voices = speechSynthesis.getVoices() || [];
+    const en = this.voices.filter(v => /^en/i.test(v.lang));
+    const ko = this.voices.filter(v => /^ko/i.test(v.lang));
+    this.en = en.find(v => /en[-_]US/i.test(v.lang)) || en[0] || null;
+    this.ko = ko[0] || null;
+    fillVoiceSelect(en);
+  },
+  cancel(){ if(this.supported) speechSynthesis.cancel(); },
+  speak(text, opt){
+    opt = opt || {};
+    if(!this.supported){ if(opt.onend) opt.onend(); return; }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const korean = opt.lang === 'ko';
+    const v = korean ? this.ko : (chosenEnVoice() || this.en);
+    if(v){ u.voice = v; u.lang = v.lang; }
+    else u.lang = korean ? 'ko-KR' : 'en-US';
+    u.rate = opt.rate != null ? opt.rate : (korean ? 1 : S.rate);
+    u.pitch = 1;
+    if(opt.onend) u.onend = u.onerror = once(opt.onend);
+    // Chrome 버그 회피: 취소 직후 바로 speak 하면 무음이 되는 경우가 있음
+    setTimeout(() => speechSynthesis.speak(u), 40);
+  }
+};
+function once(fn){ let done = false; return function(){ if(done) return; done = true; fn(); }; }
+/* 이름 부르기: 받침이 없으면 "지유야", 있으면 "지훈아".
+   한글이 아닌 이름(Emma 등)은 그대로 부르고, 이름이 비어 있으면 부르지 않는다. */
+function vocative(){
+  const n = (S.name || '').trim();
+  if(!n) return '';
+  const last = n.charCodeAt(n.length - 1);
+  if(last >= 0xAC00 && last <= 0xD7A3){
+    return n + (((last - 0xAC00) % 28) === 0 ? '야' : '아');
+  }
+  return n;
+}
+function praiseText(){ const v = vocative(); return v ? v + ' 잘했어!' : '잘했어!'; }
+function retryText(){  const v = vocative(); return v ? '다시 해봐 ' + v : '다시 해봐.'; }
+function enName(suffix){ const n = (S.name || '').trim(); return n ? suffix + ', ' + n + '!' : suffix + '!'; }
+
+// 한국어 음성이 없으면 영어 문장으로 대체
+function say(koText, enText, opt){
+  TTS.speak(TTS.ko ? koText : enText, Object.assign({lang: TTS.ko ? 'ko' : 'en', rate:1}, opt||{}));
+}
+
+/* ─────────────── DOM ─────────────── */
+const $ = id => document.getElementById(id);
+const el = {
+  setup:$('setupView'), quiz:$('quizView'), result:$('resultView'),
+  words:$('words'), wordCount:$('wordCount'), ttsWarn:$('ttsWarn'),
+  fileInput:$('fileInput'), fileMsg:$('fileMsg'),
+  mode:$('mode'), learnerName:$('learnerName'), count:$('count'), tries:$('tries'), rate:$('rate'), rateVal:$('rateVal'), voice:$('voice'),
+  speakLabel:$('speakLabel'), answerLabel:$('answerLabel'), btnSpell:$('btnSpell'),
+  optShuffle:$('optShuffle'), optMeaning:$('optMeaning'), optLen:$('optLen'),
+  optCase:$('optCase'), optAuto:$('optAuto'),
+  progressText:$('progressText'), scoreText:$('scoreText'), progressBar:$('progressBar'),
+  meaning:$('meaning'), pattern:$('pattern'), answer:$('answer'), feedback:$('feedback'),
+  btnSubmit:$('btnSubmit'), btnNext:$('btnNext'), btnGiveUp:$('btnGiveUp'),
+  finalScore:$('finalScore'), wrongBody:$('wrongBody'), wrongCard:$('wrongCard')
+};
+
+/* ─────────────── 설정 저장 ─────────────── */
+const KEY_W = 'sq.words', KEY_S = 'sq.settings';
+const S = { mode:'ko', name:'지유', rate:0.9, tries:2, shuffle:true, meaning:true, len:false, caseSensitive:false, auto:true, voiceURI:'', count:'' };
+
+function readSettings(){
+  S.mode = el.mode.value;
+  S.name = el.learnerName.value.trim();
+  S.rate = parseFloat(el.rate.value);
+  S.tries = parseInt(el.tries.value, 10);
+  S.shuffle = el.optShuffle.checked;
+  S.meaning = el.optMeaning.checked;
+  S.len = el.optLen.checked;
+  S.caseSensitive = el.optCase.checked;
+  S.auto = el.optAuto.checked;
+  S.voiceURI = el.voice.value;
+  S.count = el.count.value;
+  try{ localStorage.setItem(KEY_S, JSON.stringify(S)); }catch(e){}
+}
+function applySettings(){
+  let saved = null;
+  try{ saved = JSON.parse(localStorage.getItem(KEY_S) || 'null'); }catch(e){}
+  if(saved) Object.assign(S, saved);
+  el.mode.value = S.mode;
+  el.learnerName.value = S.name || '';
+  el.rate.value = S.rate; el.rateVal.textContent = S.rate;
+  el.tries.value = String(S.tries);
+  el.optShuffle.checked = S.shuffle; el.optMeaning.checked = S.meaning;
+  el.optLen.checked = S.len; el.optCase.checked = S.caseSensitive; el.optAuto.checked = S.auto;
+  el.count.value = S.count || '';
+}
+function chosenEnVoice(){
+  if(!S.voiceURI) return null;
+  return TTS.voices.find(v => v.voiceURI === S.voiceURI) || null;
+}
+function fillVoiceSelect(enVoices){
+  const cur = el.voice.value || S.voiceURI;
+  el.voice.innerHTML = '';
+  if(!enVoices.length){
+    el.voice.innerHTML = '<option value="">(영어 음성 없음)</option>';
+    return;
+  }
+  enVoices.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v.voiceURI; o.textContent = v.name + ' (' + v.lang + ')';
+    el.voice.appendChild(o);
+  });
+  if(cur && enVoices.some(v => v.voiceURI === cur)) el.voice.value = cur;
+  else if(TTS.en) el.voice.value = TTS.en.voiceURI;
+  S.voiceURI = el.voice.value;
+}
+
+/* ─────────────── 단어 파싱 ─────────────── */
+function parseWords(text){
+  let lines = text.split(/\r?\n/);
+  // 한 줄에 쉼표로 나열한 경우도 허용 (뜻 없는 목록)
+  const real = lines.filter(l => l.trim());
+  if(real.length === 1 && !/[가-힣]/.test(real[0]) && (real[0].match(/,/g) || []).length >= 2){
+    lines = real[0].split(',');
+  }
+
+  const out = [], seen = new Set();
+  for(const raw of lines){
+    const line = raw.trim();
+    if(!line || line.startsWith('#')) continue;
+    let word = line, meaning = '';
+    const m = line.match(/^([^\t,:=|]+?)\s*[\t,:=|]\s*(.+)$/);
+    if(m){ word = m[1].trim(); meaning = m[2].trim(); }
+    word = word.replace(/\s+/g, ' ').trim();
+    if(!word) continue;
+    const k = word.toLowerCase();
+    if(seen.has(k)) continue;
+    seen.add(k);
+    out.push({word, meaning});
+  }
+  return out;
+}
+function updateCount(){
+  const n = parseWords(el.words.value).length;
+  el.wordCount.textContent = n + '개';
+  try{ localStorage.setItem(KEY_W, el.words.value); }catch(e){}
+}
+
+/* ─────────────── 퀴즈 상태 ─────────────── */
+const Q = { list:[], i:0, attempt:0, ok:0, ng:0, revealed:false, results:[], token:0 };
+
+function startQuiz(list){
+  if(!list.length){ alert('단어를 먼저 입력해 주세요.'); return; }
+  readSettings();
+  let items = list.slice();
+
+  if(S.mode === 'ko'){
+    const withMeaning = items.filter(x => x.meaning);
+    if(!withMeaning.length){
+      alert('한국어 뜻 듣기 방식은 뜻이 필요합니다.\n\n각 줄을 「단어, 뜻」 형식으로 입력해 주세요.\n예) vacation, 휴가\n\n뜻 없이 연습하려면 출제 방식을 「영어 발음 듣기」로 바꿔 주세요.');
+      return;
+    }
+    if(withMeaning.length < items.length){
+      alert('뜻이 없는 단어 ' + (items.length - withMeaning.length) + '개는 제외하고 ' + withMeaning.length + '개로 진행합니다.');
+    }
+    items = withMeaning;
+    if(TTS.supported && !TTS.ko){
+      alert('이 컴퓨터에 한국어 음성이 없어 뜻을 읽어줄 수 없습니다.\n대신 뜻을 글자로 보여드립니다.\n\n(Windows: 설정 → 시간 및 언어 → 음성 → 음성 추가에서 한국어 설치)');
+      el.optMeaning.checked = true;
+      S.meaning = true;
+    }
+  }
+
+  if(S.shuffle) shuffle(items);
+  const n = parseInt(S.count, 10);
+  if(n > 0 && n < items.length) items = items.slice(0, n);
+
+  Q.list = items; Q.i = 0; Q.attempt = 0; Q.ok = 0; Q.ng = 0; Q.results = [];
+  show('quiz');
+  ask();
+}
+function shuffle(a){
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+}
+function cur(){ return Q.list[Q.i]; }
+
+function ask(){
+  Q.attempt = 0; Q.revealed = false; Q.token++;
+  const w = cur();
+  el.answer.value = '';
+  el.answer.disabled = false;
+  el.feedback.className = 'feedback';
+  el.feedback.textContent = '';
+  el.btnSubmit.classList.remove('hidden');
+  el.btnNext.classList.add('hidden');
+  el.btnGiveUp.classList.remove('hidden');
+  el.btnSpell.classList.add('hidden');          // 철자 듣기는 정답 공개 후에만
+  const koMode = S.mode === 'ko';
+  el.speakLabel.textContent = koMode ? '뜻 다시 듣기' : '다시 듣기';
+  el.answerLabel.textContent = koMode
+    ? '이 뜻에 해당하는 영어 단어의 스펠링을 입력하세요'
+    : '들은 단어의 스펠링을 입력하세요';
+  el.meaning.textContent = (S.meaning && w.meaning)
+    ? (koMode ? '“' + w.meaning + '”' : '뜻: ' + w.meaning) : '';
+  el.pattern.textContent = S.len ? lengthHint(w.word) : '';
+  renderProgress();
+  el.answer.focus();
+  speakPrompt();
+}
+function lengthHint(word){
+  return word.split('').map(c => /[a-z]/i.test(c) ? '_' : c).join(' ');
+}
+function renderProgress(){
+  el.progressText.textContent = (Q.i + 1) + ' / ' + Q.list.length;
+  el.scoreText.textContent = '⭕ ' + Q.ok + '   ❌ ' + Q.ng;
+  el.progressBar.style.width = (Q.i / Q.list.length * 100) + '%';
+}
+// 문제 읽어주기: ko 모드는 한국어 뜻을, en 모드는 영어 단어를
+function speakPrompt(rate){
+  const w = cur();
+  const r = rate != null ? rate : S.rate;
+  if(S.mode === 'ko') TTS.speak(w.meaning, {lang:'ko', rate:r});
+  else TTS.speak(w.word, {rate:r});
+}
+function spellOut(){
+  TTS.speak(cur().word.split('').join(', '), {rate: Math.min(S.rate, 0.9)});
+}
+
+function normalize(s){
+  s = s.trim().replace(/\s+/g, ' ');
+  return S.caseSensitive ? s : s.toLowerCase();
+}
+
+function submit(){
+  if(Q.revealed){ next(); return; }
+  const typed = el.answer.value;
+  if(!typed.trim()){ speakPrompt(); return; }   // 빈 칸이면 다시 듣기
+
+  const w = cur();
+  const t = Q.token;
+  if(normalize(typed) === normalize(w.word)){
+    Q.ok++;
+    Q.results.push({word:w.word, meaning:w.meaning, correct:true, tries:Q.attempt + 1});
+    el.feedback.className = 'feedback show ok';
+    el.feedback.innerHTML = '⭕ ' + esc(praiseText()) + ' <span class="ans">' + esc(w.word) + '</span>';
+    el.answer.disabled = true;
+    el.btnGiveUp.classList.add('hidden');
+    lockToNext();
+    // 음성이 끝나면 다음 문제로. 음성이 나오지 않는 환경을 대비해 타이머로도 진행.
+    const go = () => { if(Q.token === t && S.auto) next(); };
+    if(S.mode === 'ko'){
+      // 뜻만 들었으므로 영어 발음도 한 번 들려준다
+      say(praiseText(), enName('Well done'), {onend: () => {
+        if(Q.token !== t) return;
+        TTS.speak(w.word, {rate:S.rate, onend: go});
+      }});
+      if(S.auto) setTimeout(go, 4500);
+    }else{
+      say(praiseText(), enName('Well done'), {onend: go});
+      if(S.auto) setTimeout(go, 2500);
+    }
+    if(!S.auto) el.btnNext.focus();
+    renderProgress();
+    return;
+  }
+
+  Q.attempt++;
+  const left = S.tries === 0 ? Infinity : S.tries - Q.attempt;
+  if(left > 0){
+    el.feedback.className = 'feedback show bad';
+    el.feedback.textContent = '❌ ' + retryText() +
+      (S.tries === 0 ? '' : ' (남은 기회 ' + left + '회)');
+    el.answer.select();
+    say(retryText(), enName('Try again'),
+        // 이미 정답을 맞혔거나 정답이 공개된 뒤라면 뜻을 다시 읽지 않는다
+        {onend: () => { if(Q.token === t && !Q.revealed && !el.answer.disabled) speakPrompt(); }});
+  }else{
+    reveal(false);
+  }
+}
+
+function reveal(gaveUp){
+  const w = cur();
+  Q.ng++;
+  Q.results.push({word:w.word, meaning:w.meaning, correct:false, tries:gaveUp ? 0 : Q.attempt});
+  Q.revealed = true;
+  el.feedback.className = 'feedback show bad';
+  el.feedback.innerHTML = '정답은 <span class="ans">' + esc(w.word) + '</span>' +
+    (w.meaning ? ' — ' + esc(w.meaning) : '');
+  el.answer.value = w.word;
+  el.answer.disabled = true;
+  el.btnGiveUp.classList.add('hidden');
+  lockToNext();
+  el.btnSpell.classList.remove('hidden');
+  const t = Q.token;
+  // "정답은," → 영어 발음 → 철자 하나씩
+  say('정답은,', 'The answer is,', {onend: () => {
+    if(Q.token !== t) return;
+    TTS.speak(w.word, {rate:S.rate, onend: () => { if(Q.token === t) spellOut(); }});
+  }});
+  renderProgress();
+}
+function lockToNext(){
+  el.btnSubmit.classList.add('hidden');
+  el.btnNext.classList.remove('hidden');
+}
+function next(){
+  TTS.cancel();
+  if(Q.i + 1 >= Q.list.length){ finish(); return; }
+  Q.i++;
+  ask();
+}
+function finish(){
+  Q.token++;            // 대기 중인 자동 진행 콜백 무효화
+  TTS.cancel();
+  show('result');
+  const total = Q.results.length || 1;
+  const pct = Math.round(Q.ok / total * 100);
+  el.finalScore.innerHTML = Q.ok + ' / ' + Q.results.length +
+    ' <small>정답률 ' + pct + '% · 틀린 단어 ' + Q.ng + '개</small>';
+  const wrong = Q.results.filter(r => !r.correct);
+  el.wrongCard.classList.toggle('hidden', wrong.length === 0);
+  el.wrongBody.innerHTML = wrong.map(r =>
+    '<tr><td class="w">' + esc(r.word) + '</td><td>' + esc(r.meaning || '') + '</td><td>' +
+    (r.tries ? r.tries + '회' : '포기') + '</td></tr>').join('');
+  $('btnRetryWrong').disabled = wrong.length === 0;
+  const v = vocative();
+  say(pct === 100 ? (v ? v + ' 전부 다 맞았어. 훌륭해!' : '전부 다 맞았어. 훌륭해!')
+                  : (v ? v + ' 수고했어!' : '수고했어!'),
+      enName(pct === 100 ? 'Perfect' : 'Good job'));
+}
+function esc(s){
+  return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+function show(which){
+  el.setup.classList.toggle('hidden', which !== 'setup');
+  el.quiz.classList.toggle('hidden', which !== 'quiz');
+  el.result.classList.toggle('hidden', which !== 'result');
+  window.scrollTo(0, 0);
+}
+
+/* ─────────────── 엑셀 / CSV 불러오기 ───────────────
+   외부 라이브러리 없이 브라우저 내장 기능만 사용:
+   xlsx = zip 이므로 직접 zip 을 풀고(DecompressionStream) 시트 XML 을 읽는다. */
+
+const FILE_HINT = el.fileMsg.innerHTML;
+function fileMsg(html){ el.fileMsg.innerHTML = html || FILE_HINT; }
+
+async function inflateRaw(bytes){
+  if(typeof DecompressionStream === 'undefined'){
+    throw new Error('이 브라우저는 엑셀 파일 압축 해제를 지원하지 않습니다.\n최신 Chrome / Edge 로 열거나, 엑셀에서 CSV로 저장해 불러와 주세요.');
+  }
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+const XLSX_WANTED = /^(xl\/sharedStrings\.xml|xl\/workbook\.xml|xl\/_rels\/workbook\.xml\.rels|xl\/worksheets\/sheet\d+\.xml)$/;
+
+async function unzip(buf){
+  const dv = new DataView(buf), u8 = new Uint8Array(buf);
+  let eocd = -1;
+  const limit = Math.max(0, u8.length - 22 - 65535);
+  for(let i = u8.length - 22; i >= limit; i--){
+    if(dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+  }
+  if(eocd < 0) throw new Error('엑셀 파일 구조를 읽지 못했습니다. 파일이 손상되지 않았는지 확인해 주세요.');
+
+  const count = dv.getUint16(eocd + 10, true);
+  let off = dv.getUint32(eocd + 16, true);
+  if(off === 0xFFFFFFFF) throw new Error('용량이 매우 큰 엑셀(ZIP64) 파일은 지원하지 않습니다. CSV로 저장해 불러와 주세요.');
+
+  const out = {}, dec = new TextDecoder('utf-8');
+  for(let i = 0; i < count; i++){
+    if(off + 46 > u8.length || dv.getUint32(off, true) !== 0x02014b50) break;
+    const method   = dv.getUint16(off + 10, true);
+    const compSize = dv.getUint32(off + 20, true);
+    const fnLen    = dv.getUint16(off + 28, true);
+    const exLen    = dv.getUint16(off + 30, true);
+    const cmLen    = dv.getUint16(off + 32, true);
+    const lho      = dv.getUint32(off + 42, true);
+    const name     = dec.decode(u8.subarray(off + 46, off + 46 + fnLen));
+    if(XLSX_WANTED.test(name)){
+      if(compSize === 0xFFFFFFFF || lho === 0xFFFFFFFF){
+        throw new Error('용량이 매우 큰 엑셀(ZIP64) 파일은 지원하지 않습니다. CSV로 저장해 불러와 주세요.');
+      }
+      const start = lho + 30 + dv.getUint16(lho + 26, true) + dv.getUint16(lho + 28, true);
+      const raw = u8.subarray(start, start + compSize);
+      out[name] = method === 0 ? raw : await inflateRaw(raw);
+    }
+    off += 46 + fnLen + exLen + cmLen;
+  }
+  return out;
+}
+
+function colIndex(ref){
+  const m = /^([A-Z]+)/.exec(ref);
+  if(!m) return -1;
+  let n = 0;
+  for(let i = 0; i < m[1].length; i++) n = n * 26 + (m[1].charCodeAt(i) - 64);
+  return n - 1;
+}
+function textOf(node, tag){
+  const ts = node.getElementsByTagName(tag);
+  let s = '';
+  for(let i = 0; i < ts.length; i++) s += ts[i].textContent;
+  return s;
+}
+
+async function readXlsx(buf){
+  const files = await unzip(buf);
+  const dp = new DOMParser();
+  const get = n => files[n] ? new TextDecoder('utf-8').decode(files[n]) : null;
+  const xml = n => { const s = get(n); return s ? dp.parseFromString(s, 'application/xml') : null; };
+
+  // 공유 문자열 테이블
+  const shared = [];
+  const ss = xml('xl/sharedStrings.xml');
+  if(ss){
+    const sis = ss.getElementsByTagName('si');
+    for(let i = 0; i < sis.length; i++) shared.push(textOf(sis[i], 't'));
+  }
+
+  // 첫 번째 시트 위치 찾기
+  let target = 'xl/worksheets/sheet1.xml', sheetName = '';
+  const wb = xml('xl/workbook.xml'), rel = xml('xl/_rels/workbook.xml.rels');
+  const sheet0 = wb && wb.getElementsByTagName('sheet')[0];
+  if(sheet0){
+    sheetName = sheet0.getAttribute('name') || '';
+    const rid = sheet0.getAttribute('r:id') || sheet0.getAttribute('id');
+    if(rel && rid){
+      const rs = rel.getElementsByTagName('Relationship');
+      for(let i = 0; i < rs.length; i++){
+        if(rs[i].getAttribute('Id') === rid){
+          target = 'xl/' + (rs[i].getAttribute('Target') || '').replace(/^\//, '').replace(/^xl\//, '');
+          break;
+        }
+      }
+    }
+  }
+  const sheet = xml(target) || xml('xl/worksheets/sheet1.xml');
+  if(!sheet) throw new Error('엑셀 시트를 찾지 못했습니다.');
+
+  const rowsEl = sheet.getElementsByTagName('row'), rows = [];
+  for(let i = 0; i < rowsEl.length; i++){
+    const cs = rowsEl[i].getElementsByTagName('c'), arr = [];
+    for(let j = 0; j < cs.length; j++){
+      const c = cs[j], t = c.getAttribute('t');
+      let v;
+      if(t === 'inlineStr'){
+        v = textOf(c, 't');
+      }else{
+        const ve = c.getElementsByTagName('v')[0];
+        v = ve ? ve.textContent : '';
+        if(t === 's'){ const k = parseInt(v, 10); v = shared[k] != null ? shared[k] : ''; }
+      }
+      const col = colIndex(c.getAttribute('r') || '');
+      arr[col >= 0 ? col : arr.length] = v;
+    }
+    rows.push(Array.from(arr, x => x == null ? '' : x));
+  }
+  return {rows, sheet: sheetName};
+}
+
+// CSV / TSV — 한글 엑셀이 저장하는 CP949(EUC-KR)도 자동 처리
+function decodeText(buf){
+  const b = new Uint8Array(buf);
+  if(b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF) return new TextDecoder('utf-8').decode(b.subarray(3));
+  if(b[0] === 0xFF && b[1] === 0xFE) return new TextDecoder('utf-16le').decode(b.subarray(2));
+  if(b[0] === 0xFE && b[1] === 0xFF) return new TextDecoder('utf-16be').decode(b.subarray(2));
+  try{ return new TextDecoder('utf-8', {fatal:true}).decode(b); }
+  catch(e){
+    try{ return new TextDecoder('euc-kr').decode(b); }
+    catch(e2){ return new TextDecoder('utf-8').decode(b); }
+  }
+}
+function parseDelimited(text, forced){
+  text = text.replace(/^﻿/, '');
+  let delim = forced;
+  if(!delim){
+    const head = text.slice(0, 5000);
+    delim = (head.split('\t').length > head.split(',').length) ? '\t' : ',';
+  }
+  const rows = [];
+  let row = [], field = '', quoted = false;
+  for(let i = 0; i < text.length; i++){
+    const ch = text[i];
+    if(quoted){
+      if(ch === '"'){ if(text[i+1] === '"'){ field += '"'; i++; } else quoted = false; }
+      else field += ch;
+    }else if(ch === '"'){ quoted = true; }
+    else if(ch === delim){ row.push(field); field = ''; }
+    else if(ch === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+    else if(ch !== '\r'){ field += ch; }
+  }
+  if(field !== '' || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+// 표 → {단어, 뜻} 목록. 열 순서·번호 열·머리글을 알아서 처리한다.
+const HEADER_RE = /^(no\.?|번호|순번|단어|어휘|word|words|english|영어|스펠링|spelling|뜻|의미|해석|meaning|korean|한국어|한글|품사|예문|비고)$/i;
+function rowsToWords(rows){
+  const out = [];
+  rows.forEach((row, idx) => {
+    const cells = row.map(c => (c == null ? '' : String(c).trim())).filter(c => c !== '');
+    if(!cells.length) return;
+    if(idx === 0){
+      const hits = cells.filter(c => HEADER_RE.test(c)).length;
+      if(hits >= Math.min(2, cells.length)) return;   // 머리글 행 건너뛰기
+    }
+    const word = cells.find(c => /[A-Za-z]/.test(c) && !/[가-힣]/.test(c));
+    if(!word) return;
+    let mean = cells.find(c => /[가-힣]/.test(c));
+    if(!mean) mean = cells[cells.indexOf(word) + 1] || '';
+    out.push({word: word.replace(/\s+/g, ' '), meaning: mean.replace(/\s+/g, ' ')});
+  });
+  return out;
+}
+
+function insertWords(items, label){
+  const text = items.map(x => x.meaning ? x.word + ', ' + x.meaning : x.word).join('\n');
+  const prev = el.words.value.trim();
+  if(prev && confirm('기존 목록(' + parseWords(prev).length + '개)에 이어서 추가할까요?\n\n[확인] 이어서 추가\n[취소] 기존 목록을 지우고 새로 넣기')){
+    el.words.value = prev + '\n' + text;
+  }else{
+    el.words.value = text;
+  }
+  updateCount();
+  const n = parseWords(el.words.value).length;
+  const noMean = items.filter(x => !x.meaning).length;
+  fileMsg('✅ <b>' + esc(label) + '</b> 에서 ' + items.length + '개를 불러왔습니다. (현재 목록 ' + n + '개)' +
+    (noMean ? ' <span style="color:var(--warn)">· 뜻이 없는 단어 ' + noMean + '개</span>' : ''));
+}
+
+async function handleFile(file){
+  if(!file) return;
+  fileMsg('⏳ ' + esc(file.name) + ' 읽는 중…');
+  try{
+    const buf = await file.arrayBuffer();
+    const sig = new Uint8Array(buf, 0, Math.min(4, buf.byteLength));
+    let rows, sheetName = '';
+    if(sig[0] === 0x50 && sig[1] === 0x4B){                 // "PK" → xlsx
+      const r = await readXlsx(buf);
+      rows = r.rows; sheetName = r.sheet;
+    }else if(sig[0] === 0xD0 && sig[1] === 0xCF){           // 옛 .xls (OLE2)
+      throw new Error('예전 엑셀 형식(.xls)은 지원하지 않습니다.\n엑셀에서 [다른 이름으로 저장] → .xlsx 또는 CSV 로 저장한 뒤 다시 시도해 주세요.');
+    }else{
+      rows = parseDelimited(decodeText(buf), /\.tsv$/i.test(file.name) ? '\t' : null);
+    }
+    const items = rowsToWords(rows);
+    if(!items.length){
+      throw new Error('단어를 찾지 못했습니다.\n한 열에는 영어 단어가, 다른 열에는 뜻이 들어 있어야 합니다.');
+    }
+    insertWords(items, file.name + (sheetName ? ' [' + sheetName + ']' : ''));
+  }catch(err){
+    fileMsg('');
+    alert('파일을 불러오지 못했습니다.\n\n' + ((err && err.message) || err));
+  }
+}
+
+/* ─────────────── 이벤트 ─────────────── */
+$('btnFile').addEventListener('click', () => el.fileInput.click());
+el.fileInput.addEventListener('change', e => {
+  handleFile(e.target.files[0]);
+  e.target.value = '';          // 같은 파일을 다시 선택할 수 있도록
+});
+['dragenter','dragover'].forEach(ev => el.words.addEventListener(ev, e => {
+  e.preventDefault(); el.words.style.outline = '2px dashed var(--accent)';
+}));
+['dragleave','drop'].forEach(ev => el.words.addEventListener(ev, e => {
+  e.preventDefault(); el.words.style.outline = '';
+}));
+el.words.addEventListener('drop', e => {
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if(f) handleFile(f);
+});
+
+el.words.addEventListener('input', updateCount);
+el.rate.addEventListener('input', () => { el.rateVal.textContent = el.rate.value; S.rate = parseFloat(el.rate.value); });
+el.voice.addEventListener('change', () => { S.voiceURI = el.voice.value; });
+[el.mode, el.learnerName, el.tries, el.count, el.optShuffle, el.optMeaning, el.optLen, el.optCase, el.optAuto]
+  .forEach(n => n.addEventListener('change', readSettings));
+
+$('btnSample').addEventListener('click', () => {
+  el.words.value = SAMPLE; updateCount();
+});
+$('btnClear').addEventListener('click', () => {
+  if(el.words.value && !confirm('입력한 단어를 모두 지울까요?')) return;
+  el.words.value = ''; updateCount(); el.words.focus();
+});
+$('btnStart').addEventListener('click', () => startQuiz(parseWords(el.words.value)));
+
+$('btnSpeak').addEventListener('click', () => speakPrompt());
+$('btnSlow').addEventListener('click', () => speakPrompt(Math.max(0.4, S.rate - 0.35)));
+$('btnSpell').addEventListener('click', spellOut);
+el.btnSubmit.addEventListener('click', submit);
+el.btnNext.addEventListener('click', next);
+el.btnGiveUp.addEventListener('click', () => { if(!Q.revealed) reveal(true); });
+$('btnQuit').addEventListener('click', () => {
+  if(confirm('여기서 그만하고 결과를 볼까요?')) finish();
+});
+el.answer.addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); Q.revealed ? next() : submit(); }
+});
+document.addEventListener('keydown', e => {
+  if(el.quiz.classList.contains('hidden')) return;
+  if(e.key === 'Enter' && document.activeElement !== el.answer){
+    e.preventDefault(); Q.revealed ? next() : submit();
+  }
+});
+
+$('btnRetryWrong').addEventListener('click', () => {
+  const wrong = Q.results.filter(r => !r.correct).map(r => ({word:r.word, meaning:r.meaning}));
+  startQuiz(wrong);
+});
+$('btnRetryAll').addEventListener('click', () => startQuiz(Q.list.slice()));
+$('btnBack').addEventListener('click', () => { TTS.cancel(); show('setup'); });
+
+/* ─────────────── 초기화 ─────────────── */
+const SAMPLE = [
+  'vacation, 휴가','client, 고객','schedule, 일정','available, 이용 가능한','receipt, 영수증',
+  'employee, 직원','purchase, 구매하다','delivery, 배송','invoice, 청구서','appointment, 약속',
+  'attend, 참석하다','budget, 예산','colleague, 동료','confirm, 확인하다','department, 부서',
+  'discount, 할인','equipment, 장비','experience, 경험','facility, 시설','maintenance, 유지 보수',
+  'negotiate, 협상하다','opportunity, 기회','participate, 참여하다','performance, 성과',
+  'refund, 환불','reservation, 예약','responsibility, 책임','submit, 제출하다',
+  'supervisor, 상사','warranty, 품질 보증'
+].join('\n');
+
+try{
+  const savedWords = localStorage.getItem(KEY_W);
+  if(savedWords) el.words.value = savedWords;
+}catch(e){}
+applySettings();
+updateCount();
+
+if(!TTS.supported){
+  el.ttsWarn.className = 'banner show';
+  el.ttsWarn.textContent = '⚠️ 이 브라우저는 음성 합성을 지원하지 않습니다. Chrome, Edge, Safari에서 열어 주세요. (소리 없이 채점만 가능합니다)';
+}else{
+  TTS.load();
+  speechSynthesis.onvoiceschanged = () => {
+    TTS.load();
+    if(!TTS.ko){
+      el.ttsWarn.className = 'banner show';
+      el.ttsWarn.textContent = 'ℹ️ 한국어 음성이 없습니다. 뜻 읽어주기가 안 되고 채점 멘트도 영어로 나옵니다. (Windows: 설정 → 시간 및 언어 → 음성 → 음성 추가에서 한국어 설치)';
+    }else{
+      el.ttsWarn.className = 'banner';
+    }
+  };
+  // Chrome이 일정 시간 뒤 말하기를 멈추는 문제 방지
+  setInterval(() => {
+    if(speechSynthesis.speaking && !speechSynthesis.paused){ speechSynthesis.resume(); }
+  }, 8000);
+}
+})();
+</script>
+</body>
+</html>
