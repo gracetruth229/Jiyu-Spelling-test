@@ -246,11 +246,11 @@
       <div class="row" style="margin-top:10px">
         <span id="wordCount" class="chip" style="background:var(--accent-soft);color:var(--accent)">0개</span>
         <button type="button" id="btnFile" class="primary">📁 엑셀 / CSV 불러오기</button>
-        <button type="button" id="btnSample">샘플 30개 넣기</button>
+        <button type="button" id="btnBuiltin">기본 단어 (601~800) 넣기</button>
         <button type="button" id="btnClear">비우기</button>
         <input type="file" id="fileInput" accept=".xlsx,.csv,.tsv,.txt" class="hidden">
       </div>
-      <p class="hint" id="fileMsg">같은 폴더의 <b>단어목록_양식.xlsx</b> 를 채워서 올리면 가장 간단합니다. 직접 만든 엑셀도 <b>단어 열 + 뜻 열</b>만 있으면 되고, 열 순서가 바뀌거나 번호 열이 앞에 있어도 자동으로 찾습니다. 첫 줄 머리글은 건너뜁니다. 파일을 입력창에 끌어다 놓아도 됩니다.</p>
+      <p class="hint" id="fileMsg"><b>601~800번 단어 200개가 이미 들어 있습니다.</b> 그대로 쓰시면 되고, 다른 단어로 공부하려면 엑셀을 올리세요. 직접 만든 엑셀도 <b>단어 열 + 뜻 열</b>만 있으면 되고, 열 순서가 바뀌거나 번호 열이 앞에 있어도 자동으로 찾습니다. 첫 줄 머리글은 건너뜁니다. 파일을 입력창에 끌어다 놓아도 됩니다.</p>
       <p class="hint">입력한 목록은 이 브라우저에 자동 저장됩니다.</p>
     </div>
 
@@ -1023,8 +1023,11 @@ el.voice.addEventListener('change', () => { S.voiceURI = el.voice.value; });
 [el.mode, el.learnerName, el.range, el.tries, el.count, el.optShuffle, el.optMeaning, el.optLen, el.optCase, el.optAuto]
   .forEach(n => n.addEventListener('change', readSettings));
 
-$('btnSample').addEventListener('click', () => {
-  el.words.value = SAMPLE; updateCount();
+$('btnBuiltin').addEventListener('click', () => {
+  if(el.words.value.trim() && !confirm('지금 목록을 지우고 기본 단어 200개(601~800번)로 되돌릴까요?')) return;
+  el.words.value = BUILTIN;
+  updateCount();
+  fileMsg('✅ 기본 단어 <b>601~800번</b> 을 넣었습니다.');
 });
 $('btnClear').addEventListener('click', () => {
   if(el.words.value && !confirm('입력한 단어를 모두 지울까요?')) return;
@@ -1059,20 +1062,213 @@ $('btnRetryAll').addEventListener('click', () => startQuiz(Q.list.slice(), true)
 $('btnBack').addEventListener('click', () => { TTS.cancel(); show('setup'); });
 
 /* ─────────────── 초기화 ─────────────── */
-const SAMPLE = [
-  'vacation, 휴가','client, 고객','schedule, 일정','available, 이용 가능한','receipt, 영수증',
-  'employee, 직원','purchase, 구매하다','delivery, 배송','invoice, 청구서','appointment, 약속',
-  'attend, 참석하다','budget, 예산','colleague, 동료','confirm, 확인하다','department, 부서',
-  'discount, 할인','equipment, 장비','experience, 경험','facility, 시설','maintenance, 유지 보수',
-  'negotiate, 협상하다','opportunity, 기회','participate, 참여하다','performance, 성과',
-  'refund, 환불','reservation, 예약','responsibility, 책임','submit, 제출하다',
-  'supervisor, 상사','warranty, 품질 보증'
-].join('\n');
+/* 기본 내장 단어: Day21~Day27 (601~800번) — 파일을 올리지 않아도 바로 쓸 수 있다 */
+const BUILTIN = `601. skate, 스케이트
+602. skirt, 치마
+603. sky, 하늘
+604. sleep, 잠자다
+605. slide, 미끄러지다
+606. slow, 느린
+607. small, 작은
+608. smell, 냄새나다
+609. smile, 웃다
+610. smoke, 연기
+611. snow, 눈
+612. so, 그와같이
+613. soap, 비누
+614. soccer, 축구
+615. socks, 양말
+616. soft, 부드러운
+617. some, 약간의
+618. son, 아들
+619. song, 노래
+620. soon, 곧
+621. sorry, 슬픈/유감의
+622. sound, 소리
+623. soup, 스프
+624. south, 남쪽
+625. space, 공간/우주
+626. speak, 이야기하다
+627. speed, 속력
+628. spell, 철자
+629. spend, 낭비하다
+630. spoon, 숟가락
+631. sport, 운동경기
+632. spring, 봄/용수철
+633. square, 정사각형
+634. stairs, 계단
+635. stamp, 우표
+636. stand, 서다/일어서다
+637. star, 별
+638. start, 출발하다
+639. station, 정거장
+640. stay, 머물다
+641. steam, 증기
+642. step, 한걸음
+643. stick, 막대기
+644. stone, 돌
+645. stop, 멈추다
+646. store, 가게
+647. storm, 폭풍우
+648. story, 이야기
+649. stove, 스토브/난로
+650. straight, 곧은
+651. strange, 이상한/낯선
+652. strawberry, 딸기
+653. street, 거리
+654. strike, 치다
+655. stop, 멈추다
+656. student, 학생
+657. study, 공부
+658. stupid, 어리석은
+659. subway, 지하철
+660. sugar, 설탕
+661. summer, 여름
+662. sun, 태양
+663. supermarket, 슈퍼마켓
+664. supper, 저녁식사
+665. sure, 확실한
+666. surprise, 놀라운
+667. sweater, 스웨터
+668. sweet, 달콤한
+669. swim, 수영
+670. swing, 흔들리다
+671. switch, 스위치
+672. table, 탁자/식탁
+673. take, 가져가다/잡다
+674. talk, 말하다
+675. tall, 키가 큰
+676. tape, 테이프
+677. taste, 맛보다
+678. taxi, 택시
+679. tea, 차
+680. teach, 가르치다
+681. team, 팀
+682. telephone, 전화기
+683. television, 텔레비젼
+684. tell, 이야기하다
+685. temple, 절
+686. tennis, 테니스
+687. test, 시험
+688. than, ~보다
+689. thank, 감사하다
+690. that, 그것
+691. the, 그
+692. then, 그때
+693. there, 그곳에
+694. they, 그들
+695. thick, 두꺼운
+696. thin, 얇은
+697. thing, 사물
+698. think, 생각하다
+699. thirsty, 목마른/갈망
+700. this, 이것
+701. thousand, 1,000
+702. through, 통해서
+703. throw, 던지다
+704. ticket, 표
+705. tie, 매다
+706. tiger, 호랑이
+707. till, ~까지
+708. time, 시간
+709. tired, 피곤한
+710. to, 으로/~까지
+711. today, 오늘/현재
+712. together, 함께
+713. tomato, 토마토
+714. tomorrow, 내일
+715. tonight, 오늘밤
+716. too, 또한/많은
+717. tooth, 이
+718. top, 꼭대기
+719. touch, 만지다
+720. town, 도시
+721. toy, 장난감
+722. train, 훈련/기차
+723. travel, 여행
+724. tree, 나무
+725. trip, 여행
+726. truck, 화물차
+727. true, 참된/진짜의
+728. try, 노력
+729. tulip, 튤립
+730. turn, 돌다
+731. twice, 두번
+732. umbrella, 우산
+733. uncle, 삼촌
+734. under, ~아래에
+735. understand, 이해하다
+736. until, ~까지
+737. up, 위에
+738. use, 사용하다
+739. usual, 보통의
+740. vacation, 휴가
+741. vegetable, 야채
+742. very, 대단히/몹시
+743. video, 비디오
+744. village, 마을
+745. visit, 방문하다
+746. violin, 바이올린
+747. wait, 기다리다
+748. wake, 잠이깨다
+749. walk, 걷다
+750. wall, 벽
+751. want, 원하다
+752. war, 전쟁
+753. warm, 따뜻한
+754. wash, 씻다
+755. waste, 낭비하다
+756. watch, 시계
+757. water, 물
+758. way, 길
+759. we, 우리
+760. weak, 약한
+761. wear, 옷입다
+762. weather, 날씨
+763. week, 주
+764. welcome, 환영하다
+765. well, 상당히
+766. west, 서쪽
+767. wet, 젖은
+768. what, 무엇
+769. when, 언제
+770. where, 어디
+771. which, 어느 쪽
+772. white, 백색
+773. who, 누구
+774. why, 왜
+775. wide, 넓은
+776. will, ~할것이다
+777. win, 이기다
+778. wind, 바람
+779. window, 창문
+780. wing, 날개
+781. winter, 겨울
+782. with, ~와 함께
+783. woman, 여자
+784. wonder, 놀라다
+785. wood, 나무
+786. word, 낱말/말
+787. work, 일
+788. world, 세상
+789. write, 쓰다
+790. wrong, 나쁜
+791. yeah, 예<찬성>
+792. year, 해/1년
+793. yellow, 노란색
+794. yes, 예<대답>
+795. yesterday, 어제
+796. yet, 아직
+797. you, 당신
+798. young, 젊은
+799. zero, 숫자0
+800. zoo, 동물원`;
 
-try{
-  const savedWords = localStorage.getItem(KEY_W);
-  if(savedWords) el.words.value = savedWords;
-}catch(e){}
+// 저장된 목록이 있으면 그것을, 처음 방문이면 기본 단어를 넣는다.
+// (직접 비운 경우에는 빈 상태를 존중한다)
+let savedWords = null;
+try{ savedWords = localStorage.getItem(KEY_W); }catch(e){}
+el.words.value = (savedWords == null) ? BUILTIN : savedWords;
 applySettings();
 updateCount();
 
