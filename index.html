@@ -35,28 +35,7 @@
     --mono:ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono",
            "JetBrains Mono", Consolas, "D2Coding", monospace;
   }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      color-scheme:dark;
-      --bg:#1a1218; --bg-tint:#ff9ec4;
-      --card:#251a21; --field:#2b1f27;
-      --fg:#f8eaf1; --fg-soft:#ddc7d2; --muted:#a8909c;
-      --line:#3a2a33; --line-strong:#4b3742;
-
-      --accent:#ff9ec4; --accent-2:#ffc7dd;
-      --grad-1:#f284b0; --grad-2:#ffc0da;
-      --accent-fg:#2c1019;
-      --accent-soft:#33212b; --accent-line:#5f3d4e;
-
-      --ok:#4fdda6; --ok-bg:#122b23; --ok-line:#2d6d54;
-      --bad:#ff8f9e; --bad-bg:#331920; --bad-line:#7d3a47;
-      --warn:#ffd07a; --warn-bg:#2c2415; --warn-line:#6d5729;
-
-      --shadow-sm:0 1px 2px rgba(0,0,0,.4);
-      --shadow:0 2px 6px rgba(0,0,0,.45), 0 16px 40px -12px rgba(0,0,0,.6);
-      --shadow-accent:0 6px 20px -8px rgba(242,132,176,.5);
-    }
-  }
+  /* 이 앱은 항상 밝은 분홍 화면입니다. 기기가 어두운 모드여도 바뀌지 않습니다. */
   *{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
   body{
@@ -75,7 +54,7 @@
   /* ── 헤더 & 마스코트 ── */
   header{display:flex; align-items:center; gap:13px; margin-bottom:22px}
   .mascot{flex:none; display:block; line-height:0}
-  .mascot svg{width:56px; height:56px; display:block; overflow:visible}
+  .mascot svg{width:64px; height:53px; display:block; overflow:visible}
   .mascot .fur{fill:#fffdfa; stroke:var(--accent-line); stroke-width:1.7; stroke-linejoin:round}
   .mascot .ink{fill:#4a3038}
   .mascot .glint{fill:#fff}
@@ -90,7 +69,7 @@
     92%{transform:rotate(-7deg)}
     96%{transform:rotate(5deg)}
   }
-  .mascot.big svg{width:104px; height:104px; margin:0 auto 4px}
+  .mascot.big svg{width:124px; height:103px; margin:0 auto 4px}
   h1{
     font-size:1.6rem; font-weight:800; margin:0; letter-spacing:-.028em; line-height:1.25;
     background:linear-gradient(100deg, var(--accent) 10%, var(--accent-2) 90%);
@@ -255,24 +234,24 @@
   <header>
     <!-- 직접 그린 고양이 마스코트 -->
     <span class="mascot" id="mascot" aria-hidden="true">
-      <svg viewBox="0 0 64 60" xmlns="http://www.w3.org/2000/svg">
-        <path class="fur" d="M13 27 L17.5 8 L31 19 Z"/>
-        <path class="fur" d="M51 27 L46.5 8 L33 19 Z"/>
-        <ellipse class="fur" cx="32" cy="35" rx="23" ry="19"/>
-        <path class="whisk" d="M11 33 L3.5 30.5 M11 37.5 L3.5 39"/>
-        <path class="whisk" d="M53 33 L60.5 30.5 M53 37.5 L60.5 39"/>
-        <ellipse class="blush" cx="17.5" cy="40" rx="4" ry="2.6"/>
-        <ellipse class="blush" cx="46.5" cy="40" rx="4" ry="2.6"/>
-        <ellipse class="ink" cx="24.5" cy="33.5" rx="2.7" ry="3.7"/>
-        <ellipse class="ink" cx="39.5" cy="33.5" rx="2.7" ry="3.7"/>
-        <circle class="glint" cx="25.5" cy="32.2" r="1"/>
-        <circle class="glint" cx="40.5" cy="32.2" r="1"/>
-        <path class="pink" d="M29.6 40.4 h4.8 l-2.4 2.6 z"/>
-        <path class="smile" d="M27.6 44.6 q4.4 3.6 8.8 0"/>
+      <svg viewBox="0 0 72 60" xmlns="http://www.w3.org/2000/svg">
+        <path class="fur" d="M12.5 25 L15.5 7 L32 16 Z"/>
+        <path class="fur" d="M59.5 25 L56.5 7 L40 16 Z"/>
+        <ellipse class="fur" cx="36" cy="35" rx="26" ry="20"/>
+        <path class="whisk" d="M12 31.5 L2.5 28.5 M11.5 37 L2.5 38.5"/>
+        <path class="whisk" d="M60 31.5 L69.5 28.5 M60.5 37 L69.5 38.5"/>
+        <ellipse class="blush" cx="19.5" cy="40" rx="4.4" ry="2.9"/>
+        <ellipse class="blush" cx="52.5" cy="40" rx="4.4" ry="2.9"/>
+        <ellipse class="ink" cx="26.5" cy="34" rx="2.9" ry="3.9"/>
+        <ellipse class="ink" cx="45.5" cy="34" rx="2.9" ry="3.9"/>
+        <circle class="glint" cx="27.6" cy="32.5" r="1.05"/>
+        <circle class="glint" cx="46.6" cy="32.5" r="1.05"/>
+        <ellipse class="pink" cx="36" cy="39.5" rx="2.7" ry="2"/>
+        <path class="smile" d="M31.5 44.2 q4.5 3.4 9 0"/>
         <g class="bow">
-          <ellipse class="pink" cx="43.2" cy="11" rx="5" ry="3.9" transform="rotate(-18 43.2 11)"/>
-          <ellipse class="pink" cx="52.4" cy="9" rx="5" ry="3.9" transform="rotate(18 52.4 9)"/>
-          <circle class="knot" cx="47.8" cy="10" r="2.5"/>
+          <ellipse class="pink" cx="51" cy="12" rx="5.6" ry="4.4" transform="rotate(-20 51 12)"/>
+          <ellipse class="pink" cx="61" cy="9" rx="5.6" ry="4.4" transform="rotate(20 61 9)"/>
+          <circle class="knot" cx="56" cy="10.5" r="2.8"/>
         </g>
       </svg>
     </span>
