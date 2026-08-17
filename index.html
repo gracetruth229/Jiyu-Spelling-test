@@ -63,6 +63,26 @@
   .mascot .blush{fill:var(--accent-2); opacity:.5}
   .mascot .whisk{stroke:var(--accent-line); stroke-width:1.7; stroke-linecap:round; fill:none}
   .mascot .smile{stroke:#4a3038; stroke-width:1.7; fill:none; stroke-linecap:round}
+  .mascot .dress{fill:#a9e3cd; stroke:#7bcbb0; stroke-width:1.7; stroke-linejoin:round}
+  .mascot .collar{fill:#fffdfa; stroke:var(--accent-line); stroke-width:1.4}
+  .mascot .arc{fill:none; stroke:#4a3038; stroke-width:2.2; stroke-linecap:round}
+  .mascot .mouth-open{fill:#4a3038}
+  .mascot .tongue{fill:#ff9ec4}
+  .mascot .heart{fill:#e8467e}
+  .mascot .tear{fill:#8fd0f0}
+  /* 표정 전환 */
+  .mascot .f-normal,.mascot .f-happy,.mascot .f-wink,
+  .mascot .f-heart,.mascot .f-sad{display:none}
+  .mascot[data-face="normal"] .f-normal,
+  .mascot[data-face="happy"]  .f-happy,
+  .mascot[data-face="wink"]   .f-wink,
+  .mascot[data-face="heart"]  .f-heart,
+  .mascot[data-face="sad"]    .f-sad{display:inline}
+  .mascot[data-face="happy"] svg,
+  .mascot[data-face="heart"] svg{animation:bounce .5s ease}
+  .mascot[data-face="sad"] svg{animation:shake .45s ease}
+  @keyframes bounce{0%,100%{transform:translateY(0)} 30%{transform:translateY(-7px)} 60%{transform:translateY(-2px)}}
+  @keyframes shake{0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)}}
   .mascot .bow{transform-origin:47px 10px; animation:bowWiggle 5s ease-in-out infinite}
   @keyframes bowWiggle{
     0%,88%,100%{transform:rotate(0)}
@@ -206,6 +226,31 @@
     letter-spacing:normal; -webkit-text-fill-color:var(--muted); margin-top:2px;
   }
 
+  /* ── 배경 장식 (별·하트·꽃) ── */
+  .deco{position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden}
+  .deco span{
+    position:absolute; left:var(--x); top:var(--y);
+    font-size:calc(1.7rem * var(--s, 1)); opacity:.3;
+    animation:floaty 8s ease-in-out infinite; animation-delay:var(--d, 0s);
+  }
+  @keyframes floaty{
+    0%,100%{transform:translateY(0) rotate(-7deg)}
+    50%{transform:translateY(-16px) rotate(7deg)}
+  }
+  .wrap{position:relative; z-index:1}
+
+  /* 정답일 때 튀어오르는 하트 */
+  .feedback{position:relative}
+  .pop{
+    position:absolute; left:50%; top:-4px; font-size:1.25rem; pointer-events:none;
+    opacity:0; animation:popUp 1.25s ease-out forwards; animation-delay:var(--dl, 0s);
+  }
+  @keyframes popUp{
+    0%{opacity:0; transform:translate(-50%, 0) scale(.5)}
+    25%{opacity:1}
+    100%{opacity:0; transform:translate(calc(-50% + var(--dx, 0px)), -74px) scale(1.15)}
+  }
+
   .hidden{display:none !important}
   footer{color:var(--muted); font-size:.8rem; text-align:center; margin-top:28px; line-height:1.7}
   kbd{
@@ -230,24 +275,74 @@
 </style>
 </head>
 <body>
+<div class="deco" aria-hidden="true">
+  <span style="--x:5%;  --y:9%;  --d:0s;   --s:1.1">🌸</span>
+  <span style="--x:91%; --y:6%;  --d:1.4s; --s:.85">⭐</span>
+  <span style="--x:88%; --y:34%; --d:2.6s; --s:1">💗</span>
+  <span style="--x:3%;  --y:44%; --d:.7s;  --s:.9">⭐</span>
+  <span style="--x:93%; --y:68%; --d:3.4s; --s:1.15">🌸</span>
+  <span style="--x:6%;  --y:76%; --d:2s;   --s:1">💗</span>
+  <span style="--x:78%; --y:92%; --d:4.2s; --s:.85">🌷</span>
+  <span style="--x:15%; --y:95%; --d:1.1s; --s:.9">⭐</span>
+</div>
 <div class="wrap">
   <header>
     <!-- 직접 그린 고양이 마스코트 -->
-    <span class="mascot" id="mascot" aria-hidden="true">
-      <svg viewBox="0 0 72 60" xmlns="http://www.w3.org/2000/svg">
+    <span class="mascot" id="mascot" data-face="normal" aria-hidden="true">
+      <svg viewBox="0 0 72 100" xmlns="http://www.w3.org/2000/svg">
+        <!-- 다리 -->
+        <ellipse class="fur" cx="28" cy="89" rx="6.5" ry="4.6"/>
+        <ellipse class="fur" cx="44" cy="89" rx="6.5" ry="4.6"/>
+        <!-- 원피스 -->
+        <path class="dress" d="M25 52 Q36 48.5 47 52 L53.5 85 Q36 90 18.5 85 Z"/>
+        <ellipse class="collar" cx="36" cy="53" rx="10.5" ry="3.4"/>
+        <!-- 앞발 -->
+        <ellipse class="fur" cx="16" cy="71" rx="5.6" ry="4.6"/>
+        <ellipse class="fur" cx="56" cy="71" rx="5.6" ry="4.6"/>
+        <!-- 얼굴 -->
         <path class="fur" d="M12.5 25 L15.5 7 L32 16 Z"/>
         <path class="fur" d="M59.5 25 L56.5 7 L40 16 Z"/>
-        <ellipse class="fur" cx="36" cy="35" rx="26" ry="20"/>
-        <path class="whisk" d="M12 31.5 L2.5 28.5 M11.5 37 L2.5 38.5"/>
-        <path class="whisk" d="M60 31.5 L69.5 28.5 M60.5 37 L69.5 38.5"/>
-        <ellipse class="blush" cx="19.5" cy="40" rx="4.4" ry="2.9"/>
-        <ellipse class="blush" cx="52.5" cy="40" rx="4.4" ry="2.9"/>
-        <ellipse class="ink" cx="26.5" cy="34" rx="2.9" ry="3.9"/>
-        <ellipse class="ink" cx="45.5" cy="34" rx="2.9" ry="3.9"/>
-        <circle class="glint" cx="27.6" cy="32.5" r="1.05"/>
-        <circle class="glint" cx="46.6" cy="32.5" r="1.05"/>
-        <ellipse class="pink" cx="36" cy="39.5" rx="2.7" ry="2"/>
-        <path class="smile" d="M31.5 44.2 q4.5 3.4 9 0"/>
+        <ellipse class="fur" cx="36" cy="34" rx="26" ry="20"/>
+        <path class="whisk" d="M12 30.5 L2.5 27.5 M11.5 36 L2.5 37.5"/>
+        <path class="whisk" d="M60 30.5 L69.5 27.5 M60.5 36 L69.5 37.5"/>
+        <ellipse class="blush" cx="19.5" cy="39" rx="4.4" ry="2.9"/>
+        <ellipse class="blush" cx="52.5" cy="39" rx="4.4" ry="2.9"/>
+        <ellipse class="pink" cx="36" cy="38.5" rx="2.7" ry="2"/>
+
+        <!-- 표정: data-face 값에 따라 하나만 보인다 -->
+        <g class="f-normal">
+          <ellipse class="ink" cx="26.5" cy="33" rx="2.9" ry="3.9"/>
+          <ellipse class="ink" cx="45.5" cy="33" rx="2.9" ry="3.9"/>
+          <circle class="glint" cx="27.6" cy="31.5" r="1.05"/>
+          <circle class="glint" cx="46.6" cy="31.5" r="1.05"/>
+          <path class="smile" d="M31.5 43.2 q4.5 3.4 9 0"/>
+        </g>
+        <g class="f-happy">
+          <path class="arc" d="M22.6 34.4 q3.9 -5.4 7.8 0"/>
+          <path class="arc" d="M41.6 34.4 q3.9 -5.4 7.8 0"/>
+          <path class="mouth-open" d="M30.2 42.2 q5.8 7.8 11.6 0 Z"/>
+          <ellipse class="tongue" cx="36" cy="46.2" rx="2.6" ry="1.7"/>
+        </g>
+        <g class="f-wink">
+          <ellipse class="ink" cx="26.5" cy="33" rx="2.9" ry="3.9"/>
+          <circle class="glint" cx="27.6" cy="31.5" r="1.05"/>
+          <path class="arc" d="M41.6 34.4 q3.9 -5.4 7.8 0"/>
+          <path class="smile" d="M31.5 43.2 q4.5 3.4 9 0"/>
+        </g>
+        <g class="f-heart">
+          <path class="heart" transform="translate(26.5 33)" d="M0 3.6 C -4.7 .7 -4.5 -2.9 -2 -3.6 C -.7 -3.9 0 -2.9 0 -2.9 C 0 -2.9 .7 -3.9 2 -3.6 C 4.5 -2.9 4.7 .7 0 3.6 Z"/>
+          <path class="heart" transform="translate(45.5 33)" d="M0 3.6 C -4.7 .7 -4.5 -2.9 -2 -3.6 C -.7 -3.9 0 -2.9 0 -2.9 C 0 -2.9 .7 -3.9 2 -3.6 C 4.5 -2.9 4.7 .7 0 3.6 Z"/>
+          <path class="mouth-open" d="M30.2 42.2 q5.8 7.8 11.6 0 Z"/>
+          <ellipse class="tongue" cx="36" cy="46.2" rx="2.6" ry="1.7"/>
+        </g>
+        <g class="f-sad">
+          <path class="arc" d="M22.2 27.8 q4.2 -2.4 8.4 -.2"/>
+          <path class="arc" d="M49.8 27.8 q-4.2 -2.4 -8.4 -.2"/>
+          <ellipse class="ink" cx="26.5" cy="33.6" rx="2.6" ry="3.2"/>
+          <ellipse class="ink" cx="45.5" cy="33.6" rx="2.6" ry="3.2"/>
+          <path class="tear" d="M23.4 38.4 q1.7 3.4 0 4.6 q-1.7 -1.2 0 -4.6 Z"/>
+          <path class="smile" d="M31.5 45.8 q4.5 -3.8 9 0"/>
+        </g>
         <g class="bow">
           <ellipse class="pink" cx="51" cy="12" rx="5.6" ry="4.4" transform="rotate(-20 51 12)"/>
           <ellipse class="pink" cx="61" cy="9" rx="5.6" ry="4.4" transform="rotate(20 61 9)"/>
@@ -377,7 +472,7 @@
   <section id="resultView" class="hidden">
     <div class="card">
       <h2>결과</h2>
-      <span class="mascot big" id="mascotBig" aria-hidden="true"></span>
+      <span class="mascot big" id="mascotBig" data-face="happy" aria-hidden="true"></span>
       <div class="score" id="finalScore">—</div>
       <div class="row" style="justify-content:center">
         <button type="button" id="btnRetryWrong" class="primary">틀린 단어만 다시</button>
@@ -465,8 +560,32 @@ const el = {
   progressText:$('progressText'), scoreText:$('scoreText'), progressBar:$('progressBar'),
   meaning:$('meaning'), pattern:$('pattern'), answer:$('answer'), feedback:$('feedback'),
   btnSubmit:$('btnSubmit'), btnNext:$('btnNext'), btnGiveUp:$('btnGiveUp'),
-  finalScore:$('finalScore'), wrongBody:$('wrongBody'), wrongCard:$('wrongCard')
+  finalScore:$('finalScore'), wrongBody:$('wrongBody'), wrongCard:$('wrongCard'),
+  mascot:$('mascot'), mascotBig:$('mascotBig')
 };
+
+/* 마스코트 표정: normal / happy / wink / heart / sad */
+function setFace(f){
+  [el.mascot, el.mascotBig].forEach(m => {
+    if(!m) return;
+    m.removeAttribute('data-face');   // 같은 표정을 다시 지정해도 애니메이션이 다시 돈다
+    void m.offsetWidth;
+    m.dataset.face = f;
+  });
+}
+// 정답일 때 하트가 튀어오른다
+function celebrate(){
+  const marks = ['💗','⭐','🌸','💖','✨'];
+  for(let i = 0; i < 6; i++){
+    const s = document.createElement('span');
+    s.className = 'pop';
+    s.textContent = marks[i % marks.length];
+    s.style.setProperty('--dx', (Math.random() * 130 - 65).toFixed(0) + 'px');
+    s.style.setProperty('--dl', (i * 80) + 'ms');
+    el.feedback.appendChild(s);
+    setTimeout(() => s.remove(), 1500 + i * 80);
+  }
+}
 
 /* ─────────────── 설정 저장 ─────────────── */
 const KEY_W = 'sq.words', KEY_S = 'sq.settings';
@@ -666,6 +785,7 @@ function ask(){
     ? (koMode ? '“' + w.meaning + '”' : '뜻: ' + w.meaning) : '';
   el.pattern.textContent = S.len ? lengthHint(w.word) : '';
   renderProgress();
+  setFace('normal');
   el.answer.focus();
   speakPrompt();
 }
@@ -726,6 +846,8 @@ function submit(){
     el.answer.disabled = true;
     el.btnGiveUp.classList.add('hidden');
     lockToNext();
+    setFace(Q.attempt === 0 ? 'heart' : 'happy');   // 한 번에 맞히면 하트 눈
+    celebrate();
     // 음성이 끝나면 다음 문제로. 음성이 나오지 않는 환경을 대비해 타이머로도 진행.
     const go = () => { if(Q.token === t && S.auto) next(); };
     if(S.mode === 'ko'){
@@ -751,6 +873,7 @@ function submit(){
     el.feedback.textContent = '❌ ' + retryText() +
       (S.tries === 0 ? '' : ' (남은 기회 ' + left + '회)');
     el.answer.select();
+    setFace('sad');
     say(retryText(), enName('Try again'),
         // 이미 정답을 맞혔거나 정답이 공개된 뒤라면 뜻을 다시 읽지 않는다
         {onend: () => { if(Q.token === t && !Q.revealed && !el.answer.disabled) speakPrompt(); }});
@@ -771,6 +894,7 @@ function reveal(gaveUp){
   el.answer.disabled = true;
   el.btnGiveUp.classList.add('hidden');
   lockToNext();
+  setFace('sad');
   el.btnSpell.classList.remove('hidden');
   const t = Q.token;
   // "정답은," → 영어 발음 → 철자 하나씩
@@ -805,6 +929,7 @@ function finish(){
     '<td class="w">' + esc(r.word) + '</td><td>' + esc(r.meaning || '') + '</td><td>' +
     (r.tries ? r.tries + '회' : '포기') + '</td></tr>').join('');
   $('btnRetryWrong').disabled = wrong.length === 0;
+  setFace(pct === 100 ? 'heart' : (pct >= 60 ? 'happy' : 'sad'));
   const v = vocative();
   say(pct === 100 ? (v ? v + ' 전부 다 맞았어. 훌륭해!' : '전부 다 맞았어. 훌륭해!')
                   : (v ? v + ' 수고했어!' : '수고했어!'),
@@ -1082,7 +1207,13 @@ $('btnClear').addEventListener('click', () => {
 });
 $('btnStart').addEventListener('click', () => startQuiz(parseWords(el.words.value)));
 
-$('btnSpeak').addEventListener('click', () => speakPrompt());
+$('btnSpeak').addEventListener('click', () => {
+  speakPrompt();
+  if(!Q.revealed && !el.answer.disabled){        // 아직 푸는 중이면 윙크로 응원
+    setFace('wink');
+    setTimeout(() => { if(!Q.revealed && !el.answer.disabled) setFace('normal'); }, 1100);
+  }
+});
 $('btnSlow').addEventListener('click', () => speakPrompt(Math.max(0.4, S.rate - 0.35)));
 $('btnSpell').addEventListener('click', spellOut);
 el.btnSubmit.addEventListener('click', submit);
@@ -1320,7 +1451,7 @@ applySettings();
 updateCount();
 
 // 결과 화면에도 같은 마스코트를 크게 보여준다
-$('mascotBig').innerHTML = $('mascot').innerHTML;
+el.mascotBig.innerHTML = el.mascot.innerHTML;
 
 if(!TTS.supported){
   el.ttsWarn.className = 'banner show';
