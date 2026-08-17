@@ -411,10 +411,19 @@
           <input type="range" id="rate" min="0.5" max="1.4" step="0.1" value="0.9" style="width:100%">
         </div>
         <div>
+          <label for="koVoice">칭찬 목소리 (한국어)</label>
+          <select id="koVoice"></select>
+        </div>
+        <div>
           <label for="voice">영어 목소리</label>
           <select id="voice"></select>
         </div>
       </div>
+      <div class="row" style="margin-top:12px">
+        <button type="button" id="btnTestVoice">🔈 칭찬 목소리 들어보기</button>
+      </div>
+      <p class="hint">목록에 <b>⭐</b> 가 붙은 것이 가장 자연스러운 목소리입니다.
+        하나뿐이라 아쉽다면 <b>Microsoft Edge</b> 로 열어 보세요. 훨씬 사람 같은 한국어 목소리가 여러 개 나타납니다.</p>
       <div class="row" style="margin-top:14px; gap:16px">
         <label class="check"><input type="checkbox" id="optShuffle" checked> 랜덤 순서</label>
         <label class="check"><input type="checkbox" id="optMeaning" checked> 문제 글자로 함께 보기</label>
@@ -505,9 +514,15 @@ const TTS = {
     this.voices = speechSynthesis.getVoices() || [];
     const en = this.voices.filter(v => /^en/i.test(v.lang));
     const ko = this.voices.filter(v => /^ko/i.test(v.lang));
-    this.en = en.find(v => /en[-_]US/i.test(v.lang)) || en[0] || null;
+    // "Natural" / "Online" 이 붙은 음성이 훨씬 자연스러우므로 앞으로 보낸다
+    const nat = v => (/natural|online|neural/i.test(v.name) ? 1 : 0);
+    ko.sort((a, b) => nat(b) - nat(a));
+    en.sort((a, b) => nat(b) - nat(a));
+    this.en = en.find(v => nat(v) && /en[-_]US/i.test(v.lang)) ||
+              en.find(v => /en[-_]US/i.test(v.lang)) || en[0] || null;
     this.ko = ko[0] || null;
     fillVoiceSelect(en);
+    fillKoSelect(ko);
   },
   cancel(){ if(this.supported) speechSynthesis.cancel(); },
   speak(text, opt){
@@ -516,11 +531,11 @@ const TTS = {
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     const korean = opt.lang === 'ko';
-    const v = korean ? this.ko : (chosenEnVoice() || this.en);
+    const v = korean ? (chosenKoVoice() || this.ko) : (chosenEnVoice() || this.en);
     if(v){ u.voice = v; u.lang = v.lang; }
     else u.lang = korean ? 'ko-KR' : 'en-US';
     u.rate = opt.rate != null ? opt.rate : (korean ? 1 : S.rate);
-    u.pitch = 1;
+    u.pitch = opt.pitch != null ? opt.pitch : 1;
     if(opt.onend) u.onend = u.onerror = once(opt.onend);
     // Chrome 버그 회피: 취소 직후 바로 speak 하면 무음이 되는 경우가 있음
     setTimeout(() => speechSynthesis.speak(u), 40);
@@ -538,13 +553,23 @@ function vocative(){
   }
   return n;
 }
+/* 화면에 보이는 글 */
 function praiseText(){ const v = vocative(); return v ? v + ' 잘했어!' : '잘했어!'; }
 function retryText(){  const v = vocative(); return v ? '다시 해봐 ' + v : '다시 해봐.'; }
+
+/* 소리 내어 읽을 글 — 쉼표와 느낌표를 넣으면 억양이 훨씬 자연스러워진다 */
+function praiseSpeech(){ const v = vocative(); return v ? v + ', 잘했어!' : '잘했어!'; }
+function retrySpeech(){  const v = vocative(); return v ? '다시 해봐, ' + v + '.' : '다시 해봐.'; }
 function enName(suffix){ const n = (S.name || '').trim(); return n ? suffix + ', ' + n + '!' : suffix + '!'; }
 
-// 한국어 음성이 없으면 영어 문장으로 대체
+/* 칭찬도 격려도 같은 목소리, 같은 말투로 말한다.
+   조금 높고 조금 느리게 잡아야 사람이 다정하게 말하는 느낌이 난다.
+   한국어 음성이 없으면 영어 문장으로 대체한다. */
+const TONE = {rate:0.96, pitch:1.1};
 function say(koText, enText, opt){
-  TTS.speak(TTS.ko ? koText : enText, Object.assign({lang: TTS.ko ? 'ko' : 'en', rate:1}, opt||{}));
+  const useKo = !!(chosenKoVoice() || TTS.ko);
+  TTS.speak(useKo ? koText : enText,
+    Object.assign({lang: useKo ? 'ko' : 'en'}, TONE, opt || {}));
 }
 
 /* ─────────────── DOM ─────────────── */
@@ -553,7 +578,7 @@ const el = {
   setup:$('setupView'), quiz:$('quizView'), result:$('resultView'),
   words:$('words'), wordCount:$('wordCount'), ttsWarn:$('ttsWarn'),
   fileInput:$('fileInput'), fileMsg:$('fileMsg'),
-  mode:$('mode'), learnerName:$('learnerName'), range:$('range'), count:$('count'), tries:$('tries'), rate:$('rate'), rateVal:$('rateVal'), voice:$('voice'),
+  mode:$('mode'), learnerName:$('learnerName'), range:$('range'), count:$('count'), tries:$('tries'), rate:$('rate'), rateVal:$('rateVal'), voice:$('voice'), koVoice:$('koVoice'),
   speakLabel:$('speakLabel'), answerLabel:$('answerLabel'), btnSpell:$('btnSpell'),
   optShuffle:$('optShuffle'), optMeaning:$('optMeaning'), optLen:$('optLen'),
   optCase:$('optCase'), optAuto:$('optAuto'),
@@ -589,7 +614,7 @@ function celebrate(){
 
 /* ─────────────── 설정 저장 ─────────────── */
 const KEY_W = 'sq.words', KEY_S = 'sq.settings';
-const S = { mode:'ko', name:'지유', rate:0.9, tries:2, shuffle:true, meaning:true, len:false, caseSensitive:false, auto:true, voiceURI:'', count:'', range:'' };
+const S = { mode:'ko', name:'지유', rate:0.9, tries:2, shuffle:true, meaning:true, len:false, caseSensitive:false, auto:true, voiceURI:'', koVoiceURI:'', count:'', range:'' };
 
 function readSettings(){
   S.mode = el.mode.value;
@@ -602,6 +627,7 @@ function readSettings(){
   S.caseSensitive = el.optCase.checked;
   S.auto = el.optAuto.checked;
   S.voiceURI = el.voice.value;
+  S.koVoiceURI = el.koVoice.value;
   S.count = el.count.value;
   S.range = el.range.value.trim();
   try{ localStorage.setItem(KEY_S, JSON.stringify(S)); }catch(e){}
@@ -611,6 +637,7 @@ function applySettings(){
   try{ saved = JSON.parse(localStorage.getItem(KEY_S) || 'null'); }catch(e){}
   if(saved) Object.assign(S, saved);
   el.mode.value = S.mode;
+  if(S.koVoiceURI) el.koVoice.value = S.koVoiceURI;
   el.learnerName.value = S.name || '';
   el.rate.value = S.rate; el.rateVal.textContent = S.rate;
   el.tries.value = String(S.tries);
@@ -622,6 +649,28 @@ function applySettings(){
 function chosenEnVoice(){
   if(!S.voiceURI) return null;
   return TTS.voices.find(v => v.voiceURI === S.voiceURI) || null;
+}
+function chosenKoVoice(){
+  if(!S.koVoiceURI) return null;
+  return TTS.voices.find(v => v.voiceURI === S.koVoiceURI) || null;
+}
+function fillKoSelect(koVoices){
+  const cur = el.koVoice.value || S.koVoiceURI;
+  el.koVoice.innerHTML = '';
+  if(!koVoices.length){
+    el.koVoice.innerHTML = '<option value="">(한국어 음성 없음)</option>';
+    return;
+  }
+  koVoices.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v.voiceURI;
+    // 자연스러운 음성에는 표시를 달아 고르기 쉽게 한다
+    o.textContent = (/natural|online|neural/i.test(v.name) ? '⭐ ' : '') + v.name;
+    el.koVoice.appendChild(o);
+  });
+  if(cur && koVoices.some(v => v.voiceURI === cur)) el.koVoice.value = cur;
+  else if(TTS.ko) el.koVoice.value = TTS.ko.voiceURI;
+  S.koVoiceURI = el.koVoice.value;
 }
 function fillVoiceSelect(enVoices){
   const cur = el.voice.value || S.voiceURI;
@@ -852,13 +901,13 @@ function submit(){
     const go = () => { if(Q.token === t && S.auto) next(); };
     if(S.mode === 'ko'){
       // 뜻만 들었으므로 영어 발음도 한 번 들려준다
-      say(praiseText(), enName('Well done'), {onend: () => {
+      say(praiseSpeech(), enName('Well done'), {onend: () => {
         if(Q.token !== t) return;
         TTS.speak(w.word, {rate:S.rate, onend: go});
       }});
       if(S.auto) setTimeout(go, 4500);
     }else{
-      say(praiseText(), enName('Well done'), {onend: go});
+      say(praiseSpeech(), enName('Well done'), {onend: go});
       if(S.auto) setTimeout(go, 2500);
     }
     if(!S.auto) el.btnNext.focus();
@@ -874,7 +923,7 @@ function submit(){
       (S.tries === 0 ? '' : ' (남은 기회 ' + left + '회)');
     el.answer.select();
     setFace('sad');
-    say(retryText(), enName('Try again'),
+    say(retrySpeech(), enName('Try again'),
         // 이미 정답을 맞혔거나 정답이 공개된 뒤라면 뜻을 다시 읽지 않는다
         {onend: () => { if(Q.token === t && !Q.revealed && !el.answer.disabled) speakPrompt(); }});
   }else{
@@ -931,8 +980,8 @@ function finish(){
   $('btnRetryWrong').disabled = wrong.length === 0;
   setFace(pct === 100 ? 'heart' : (pct >= 60 ? 'happy' : 'sad'));
   const v = vocative();
-  say(pct === 100 ? (v ? v + ' 전부 다 맞았어. 훌륭해!' : '전부 다 맞았어. 훌륭해!')
-                  : (v ? v + ' 수고했어!' : '수고했어!'),
+  say(pct === 100 ? (v ? v + ', 전부 다 맞았어! 훌륭해!' : '전부 다 맞았어! 훌륭해!')
+                  : (v ? v + ', 수고했어!' : '수고했어!'),
       enName(pct === 100 ? 'Perfect' : 'Good job'));
 }
 function esc(s){
@@ -1192,6 +1241,17 @@ el.words.addEventListener('drop', e => {
 el.words.addEventListener('input', updateCount);
 el.rate.addEventListener('input', () => { el.rateVal.textContent = el.rate.value; S.rate = parseFloat(el.rate.value); });
 el.voice.addEventListener('change', () => { S.voiceURI = el.voice.value; });
+el.koVoice.addEventListener('change', () => {
+  S.koVoiceURI = el.koVoice.value;
+  readSettings();
+  say(praiseSpeech(), enName('Well done'));      // 고르는 즉시 들려준다
+});
+$('btnTestVoice').addEventListener('click', () => {
+  readSettings();
+  say(praiseSpeech(), enName('Well done'), {onend: () => {
+    setTimeout(() => say(retrySpeech(), enName('Try again')), 350);
+  }});
+});
 [el.mode, el.learnerName, el.range, el.tries, el.count, el.optShuffle, el.optMeaning, el.optLen, el.optCase, el.optAuto]
   .forEach(n => n.addEventListener('change', readSettings));
 
