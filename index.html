@@ -556,7 +556,7 @@ function updateCount(){
 }
 
 /* ─────────────── 퀴즈 상태 ─────────────── */
-const Q = { list:[], i:0, attempt:0, ok:0, ng:0, revealed:false, results:[], token:0 };
+const Q = { list:[], all:[], i:0, attempt:0, ok:0, ng:0, revealed:false, results:[], token:0 };
 
 function startQuiz(list, ignoreRange){
   if(!list.length){ alert('단어를 먼저 입력해 주세요.'); return; }
@@ -602,6 +602,10 @@ function startQuiz(list, ignoreRange){
   if(S.shuffle) shuffle(items);
   const n = parseInt(S.count, 10);
   if(n > 0 && n < items.length) items = items.slice(0, n);
+
+  // 같은 뜻 판정에 쓸 전체 목록 (범위로 걸러내기 전의 원본)
+  Q.all = parseWords(el.words.value);
+  if(!Q.all.length) Q.all = list.slice();
 
   Q.list = items; Q.i = 0; Q.attempt = 0; Q.ok = 0; Q.ng = 0; Q.results = [];
   show('quiz');
@@ -664,6 +668,18 @@ function normalize(s){
   return S.caseSensitive ? s : s.toLowerCase();
 }
 
+/* 입력한 답이 맞으면 "실제로 맞힌 단어"를, 틀리면 null 을 돌려준다.
+   한국어 뜻을 듣는 방식에서는 뜻이 똑같은 다른 단어도 정답으로 인정한다.
+   (예: "여행" → travel 도 trip 도 정답) */
+function matchedWord(typed, w){
+  const t = normalize(typed);
+  if(t === normalize(w.word)) return w.word;
+  if(S.mode !== 'ko' || !w.meaning) return null;
+  const key = w.meaning.trim();
+  const hit = Q.all.find(x => x.meaning && x.meaning.trim() === key && normalize(x.word) === t);
+  return hit ? hit.word : null;
+}
+
 function submit(){
   if(Q.revealed){ next(); return; }
   const typed = el.answer.value;
@@ -671,11 +687,15 @@ function submit(){
 
   const w = cur();
   const t = Q.token;
-  if(normalize(typed) === normalize(w.word)){
+  const hit = matchedWord(typed, w);
+  if(hit){
     Q.ok++;
     Q.results.push({word:w.word, meaning:w.meaning, no:w.no, correct:true, tries:Q.attempt + 1});
     el.feedback.className = 'feedback show ok';
-    el.feedback.innerHTML = '⭕ ' + esc(praiseText()) + ' <span class="ans">' + esc(w.word) + '</span>';
+    el.feedback.innerHTML = '⭕ ' + esc(praiseText()) + ' <span class="ans">' + esc(hit) + '</span>' +
+      (normalize(hit) === normalize(w.word) ? '' :
+        '<div style="font-weight:500; font-size:.86rem; margin-top:5px; opacity:.85">' +
+        '뜻이 같아서 정답으로 인정했어요. 이 문제의 단어: <b>' + esc(w.word) + '</b></div>');
     el.answer.disabled = true;
     el.btnGiveUp.classList.add('hidden');
     lockToNext();
