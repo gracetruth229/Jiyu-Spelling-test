@@ -368,6 +368,7 @@
         <span id="wordCount" class="chip" style="background:var(--accent-soft);color:var(--accent)">0개</span>
         <button type="button" id="btnFile" class="primary">📁 엑셀 / CSV 불러오기</button>
         <button type="button" id="btnBuiltin">기본 단어 (1~800) 넣기</button>
+        <button type="button" id="btnEsioTrot">🐢 Esio Trot 단어 넣기</button>
         <button type="button" id="btnClear">비우기</button>
         <input type="file" id="fileInput" accept=".xlsx,.csv,.tsv,.txt" class="hidden">
       </div>
@@ -1261,6 +1262,12 @@ $('btnBuiltin').addEventListener('click', () => {
   updateCount();
   fileMsg('✅ 기본 단어 <b>1~800번</b> 을 넣었습니다.');
 });
+$('btnEsioTrot').addEventListener('click', () => {
+  if(el.words.value.trim() && !confirm('지금 목록을 지우고 Esio Trot 단어 99개로 바꿀까요?')) return;
+  el.words.value = BUILTIN_ESIOTROT;
+  updateCount();
+  fileMsg('✅ Roald Dahl <b>Esio Trot</b> 단어 99개를 넣었습니다.');
+});
 $('btnClear').addEventListener('click', () => {
   if(el.words.value && !confirm('입력한 단어를 모두 지울까요?')) return;
   el.words.value = ''; updateCount(); el.words.focus();
@@ -2101,6 +2108,107 @@ const BUILTIN = `1. a, 하나의
 798. young, 젊은
 799. zero, 숫자0
 800. zoo, 동물원`;
+
+/* Roald Dahl, Esio Trot 원서에 나온 단어 99개 — 이야기 맥락에 맞춘 뜻 */
+const BUILTIN_ESIOTROT = `1. flat, (영국식) 아파트, 셋집
+2. retired, 은퇴한
+3. riot, (꽃 등이) 흐드러지게 핀 것, 알록달록 뒤덮인 것
+4. entirely, 완전히, 전적으로
+5. immediately, 곧바로, 즉시
+6. jutted, 쑥 튀어나오다, 돌출되다
+7. further, 더 멀리, 그 이상
+8. attractive, 매력적인
+9. widow, 과부, 미망인
+10. although, 비록 ~이지만
+11. exchange, (인사말 등을) 주고받다
+12. polite, 예의 바른, 공손한
+13. distance, 거리
+14. yard, 안뜰, 마당
+15. courage, 용기
+16. tremendous, 굉장한, 엄청난
+17. gang, 무리, 패거리
+18. thugs, 불량배, 깡패
+19. perform, (일을) 해내다, 수행하다
+20. feat, (대단한) 재주, 묘기
+21. tortoise, 거북이
+22. endearment, 다정한 말, 애칭
+23. absurdly, 터무니없이, 우스꽝스럽게
+24. stroking, (손으로) 쓰다듬기
+25. plank, 널빤지
+26. toppling, 휘청거리며 넘어지는
+27. edge, 가장자리, 끝
+28. crawl, 기어가다
+29. bury, (땅에) 파묻다
+30. hibernate, 겨울잠을 자다
+31. certain, 확실한, 어떤(특정한)
+32. electrify, 짜릿하게 하다, 흥분시키다
+33. lean, 기대다, 몸을 기울이다
+34. lettuce, 상추
+35. gorgeous, 아주 멋진, 눈부시게 아름다운
+36. beam, 환하게 웃다
+37. ache, (마음이나 몸이) 아리다, 욱신거리다
+38. weigh, 무게를 달다
+39. scale, 저울
+40. gain, (몸무게 등이) 늘다
+41. grapefruit, 자몽
+42. solemnly, 근엄하게, 사뭇 진지하게
+43. miserable, 비참한, 울적한
+44. titchy, 아주 조그마한
+45. rushing, 서둘러 달려가는
+46. envy, 부러움, 샘
+47. spinning, (머리가) 빙빙 도는
+48. surely, 틀림없이, 분명
+49. grab, 와락 붙잡다
+50. actually, 사실은, 실제로는
+51. feed, 먹이를 주다
+52. tribesman, 부족 사람, 원주민
+53. beg, 애원하다, 간청하다
+54. slave, 노예
+55. shiver, 부르르 떨다
+56. creature, 생물, 동물
+57. bewilder, 어리둥절하게 만들다
+58. swell, 부풀어 오르다
+59. gorge, 게걸스럽게 먹다
+60. gulp, 꿀꺽 삼키다
+61. gobble, 허겁지겁 먹어치우다
+62. examine, 자세히 들여다보다, 살펴보다
+63. expression, 표정
+64. properly, 제대로
+65. quivering, 부들부들 떨리는
+66. collection, 수집품, 모음
+67. soft, 부드러운
+68. slightly, 약간
+69. great deal, 상당히 많은 양
+70. enthusiasm, 열정, 신바람
+71. exhausted, 기진맥진한
+72. swarming, 떼 지어 몰려드는
+73. explore, 살피다, 탐색하다
+74. munching, 우적우적 씹어먹는
+75. rustling, 바스락거리는
+76. mechanic, 정비공
+77. mate, 친구, 동료
+78. own, 자기 소유의, 직접
+79. stiff, 뻣뻣한
+80. connect, 잇다, 연결하다
+81. claw, 발톱
+82. railing, 난간
+83. basking, 햇볕을 쬐는
+84. pale, 창백한, 옅은
+85. wiggle, 꼼지락거리다
+86. neatly, 깔끔하게
+87. haul, 끌어당기다
+88. smallish, 좀 작은
+89. notice, 알아차리다
+90. grip, 꽉 움켜잡다
+91. chomping, 우적우적 씹는
+92. gusto, 신이 나서, 왕성한 기세로
+93. sweep, 휩쓸다, 쓸어내리다
+94. foliage, 나뭇잎, 잎사귀
+95. appetite, 식욕
+96. lift, 들어올리다
+97. enormous, 거대한
+98. lower, 낮추다, 내리다
+99. double, 두 배가 되다`;
 
 // 저장된 목록이 있으면 그것을, 처음 방문이면 기본 단어를 넣는다.
 // (직접 비운 경우에는 빈 상태를 존중한다)
