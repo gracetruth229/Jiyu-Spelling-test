@@ -1263,10 +1263,10 @@ $('btnBuiltin').addEventListener('click', () => {
   fileMsg('✅ 기본 단어 <b>1~800번</b> 을 넣었습니다.');
 });
 $('btnEsioTrot').addEventListener('click', () => {
-  if(el.words.value.trim() && !confirm('지금 목록을 지우고 Esio Trot 단어 99개로 바꿀까요?')) return;
+  if(el.words.value.trim() && !confirm('지금 목록을 지우고 Esio Trot 단어 127개로 바꿀까요?')) return;
   el.words.value = BUILTIN_ESIOTROT;
   updateCount();
-  fileMsg('✅ Roald Dahl <b>Esio Trot</b> 단어 99개를 넣었습니다.');
+  fileMsg('✅ Roald Dahl <b>Esio Trot</b> 단어 127개를 넣었습니다.');
 });
 $('btnClear').addEventListener('click', () => {
   if(el.words.value && !confirm('입력한 단어를 모두 지울까요?')) return;
@@ -2109,7 +2109,7 @@ const BUILTIN = `1. a, 하나의
 799. zero, 숫자0
 800. zoo, 동물원`;
 
-/* Roald Dahl, Esio Trot 원서에 나온 단어 99개 — 이야기 맥락에 맞춘 뜻 */
+/* Roald Dahl, Esio Trot 원서에 나온 단어 127개 — 이야기 맥락에 맞춘 뜻 */
 const BUILTIN_ESIOTROT = `1. flat, (영국식) 아파트
 2. retired, 은퇴한
 3. riot, 알록달록 뒤덮인 것
@@ -2208,7 +2208,35 @@ const BUILTIN_ESIOTROT = `1. flat, (영국식) 아파트
 96. lift, 들어올리다
 97. enormous, 거대한
 98. lower, 낮추다, 내리다
-99. double, 두 배가 되다`;
+99. double, 두 배가 되다
+100. operation, 작전, 계획
+101. casually, 아무렇지 않게
+102. ought to, ~해야 한다
+103. startled, 깜짝 놀란
+104. proudly, 자랑스럽게
+105. grand, 근사한, 웅장한
+106. enlarge, 확대하다
+107. watering, 물주기
+108. alive, 살아있는
+109. excitement, 흥분, 신남
+110. tip toe, 까치발로 걷다
+111. bishy, 망치다, 실수하다
+112. boshy, 망치다, 실수하다
+113. flung, 내던졌다
+114. deserve, ~을 받을 자격이 있다
+115. comfortable, 편안한
+116. parlour, 거실, 응접실
+117. twitter, 지저귀다
+118. opposite, 반대의
+119. get rid of, 없애다
+120. embrace, 껴안다
+121. due, 예정된
+122. breathless, 숨이 찬
+123. trace, 흔적
+124. bought, 샀다
+125. settle down, 자리 잡다, 진정하다
+126. shed, 헛간
+127. reckon, 생각하다, 짐작하다`;
 
 // 저장된 목록이 있으면 그것을, 처음 방문이면 기본 단어를 넣는다.
 // (직접 비운 경우에는 빈 상태를 존중한다)
