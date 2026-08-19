@@ -431,6 +431,7 @@
         <label class="check"><input type="checkbox" id="optLen"> 글자 수 힌트</label>
         <label class="check"><input type="checkbox" id="optCase"> 대소문자 구분</label>
         <label class="check"><input type="checkbox" id="optAuto" checked> 정답 시 자동 진행</label>
+        <label class="check"><input type="checkbox" id="optBell"> 🔔 목소리 대신 효과음(벨소리)</label>
       </div>
       <p class="hint"><b>범위</b>는 엑셀 번호(A열) 기준입니다. <b>601-630</b> 처럼 적으면 그 번호의 단어만 출제합니다.
         <b>1-50, 601-630</b> 처럼 여러 구간을 쉼표로 이어 붙이거나, <b>7</b> 처럼 한 개만 적어도 됩니다.
@@ -573,6 +574,47 @@ function say(koText, enText, opt){
     Object.assign({lang: useKo ? 'ko' : 'en'}, TONE, opt || {}));
 }
 
+/* 목소리 대신 쓰는 벨소리. 외부 파일 없이 Web Audio API로 그때그때 만든다. */
+let bellCtx = null;
+function getBellCtx(){
+  if(!bellCtx) bellCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if(bellCtx.state === 'suspended') bellCtx.resume();
+  return bellCtx;
+}
+function bellTone(freq, start, dur, type, peak){
+  const ctx = getBellCtx();
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  const t0 = ctx.currentTime + start;
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(peak, t0 + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  osc.connect(g).connect(ctx.destination);
+  osc.start(t0);
+  osc.stop(t0 + dur + 0.03);
+}
+function playCorrectBell(){
+  bellTone(880, 0, 0.16, 'sine', 0.22);      // 라
+  bellTone(1318.5, 0.09, 0.26, 'sine', 0.22); // 미 (한 옥타브 위)
+}
+function playWrongBell(){
+  bellTone(311, 0, 0.20, 'square', 0.14);
+  bellTone(233, 0.16, 0.28, 'square', 0.14);
+}
+/* 정답/오답 알림: 벨소리 모드면 소리만 내고, 아니면 원래처럼 음성으로 말한다.
+   두 경우 모두 opt.onend 로 다음 동작(자동 진행, 다시 듣기 등)을 잇는다. */
+function announceResult(ok, opt){
+  opt = opt || {};
+  if(S.bell){
+    (ok ? playCorrectBell : playWrongBell)();
+    if(opt.onend) setTimeout(opt.onend, ok ? 300 : 460);
+  }else{
+    say(ok ? praiseSpeech() : retrySpeech(), enName(ok ? 'Well done' : 'Try again'), opt);
+  }
+}
+
 /* ─────────────── DOM ─────────────── */
 const $ = id => document.getElementById(id);
 const el = {
@@ -582,7 +624,7 @@ const el = {
   mode:$('mode'), learnerName:$('learnerName'), range:$('range'), count:$('count'), tries:$('tries'), rate:$('rate'), rateVal:$('rateVal'), voice:$('voice'), koVoice:$('koVoice'),
   speakLabel:$('speakLabel'), answerLabel:$('answerLabel'), btnSpell:$('btnSpell'),
   optShuffle:$('optShuffle'), optMeaning:$('optMeaning'), optLen:$('optLen'),
-  optCase:$('optCase'), optAuto:$('optAuto'),
+  optCase:$('optCase'), optAuto:$('optAuto'), optBell:$('optBell'),
   progressText:$('progressText'), scoreText:$('scoreText'), progressBar:$('progressBar'),
   meaning:$('meaning'), pattern:$('pattern'), answer:$('answer'), feedback:$('feedback'),
   btnSubmit:$('btnSubmit'), btnNext:$('btnNext'), btnGiveUp:$('btnGiveUp'),
@@ -615,7 +657,7 @@ function celebrate(){
 
 /* ─────────────── 설정 저장 ─────────────── */
 const KEY_W = 'sq.words', KEY_S = 'sq.settings';
-const S = { mode:'ko', name:'지유', rate:0.9, tries:2, shuffle:true, meaning:true, len:false, caseSensitive:false, auto:true, voiceURI:'', koVoiceURI:'', count:'', range:'' };
+const S = { mode:'ko', name:'지유', rate:0.9, tries:2, shuffle:true, meaning:true, len:false, caseSensitive:false, auto:true, bell:false, voiceURI:'', koVoiceURI:'', count:'', range:'' };
 
 function readSettings(){
   S.mode = el.mode.value;
@@ -627,6 +669,7 @@ function readSettings(){
   S.len = el.optLen.checked;
   S.caseSensitive = el.optCase.checked;
   S.auto = el.optAuto.checked;
+  S.bell = el.optBell.checked;
   S.voiceURI = el.voice.value;
   S.koVoiceURI = el.koVoice.value;
   S.count = el.count.value;
@@ -644,6 +687,7 @@ function applySettings(){
   el.tries.value = String(S.tries);
   el.optShuffle.checked = S.shuffle; el.optMeaning.checked = S.meaning;
   el.optLen.checked = S.len; el.optCase.checked = S.caseSensitive; el.optAuto.checked = S.auto;
+  el.optBell.checked = S.bell;
   el.count.value = S.count || '';
   el.range.value = S.range || '';
 }
@@ -902,13 +946,13 @@ function submit(){
     const go = () => { if(Q.token === t && S.auto) next(); };
     if(S.mode === 'ko'){
       // 뜻만 들었으므로 영어 발음도 한 번 들려준다
-      say(praiseSpeech(), enName('Well done'), {onend: () => {
+      announceResult(true, {onend: () => {
         if(Q.token !== t) return;
         TTS.speak(w.word, {rate:S.rate, onend: go});
       }});
       if(S.auto) setTimeout(go, 4500);
     }else{
-      say(praiseSpeech(), enName('Well done'), {onend: go});
+      announceResult(true, {onend: go});
       if(S.auto) setTimeout(go, 2500);
     }
     if(!S.auto) el.btnNext.focus();
@@ -924,7 +968,7 @@ function submit(){
       (S.tries === 0 ? '' : ' (남은 기회 ' + left + '회)');
     el.answer.select();
     setFace('sad');
-    say(retrySpeech(), enName('Try again'),
+    announceResult(false,
         // 이미 정답을 맞혔거나 정답이 공개된 뒤라면 뜻을 다시 읽지 않는다
         {onend: () => { if(Q.token === t && !Q.revealed && !el.answer.disabled) speakPrompt(); }});
   }else{
@@ -1253,7 +1297,7 @@ $('btnTestVoice').addEventListener('click', () => {
     setTimeout(() => say(retrySpeech(), enName('Try again')), 350);
   }});
 });
-[el.mode, el.learnerName, el.range, el.tries, el.count, el.optShuffle, el.optMeaning, el.optLen, el.optCase, el.optAuto]
+[el.mode, el.learnerName, el.range, el.tries, el.count, el.optShuffle, el.optMeaning, el.optLen, el.optCase, el.optAuto, el.optBell]
   .forEach(n => n.addEventListener('change', readSettings));
 
 $('btnBuiltin').addEventListener('click', () => {
